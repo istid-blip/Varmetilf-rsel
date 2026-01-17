@@ -9,10 +9,15 @@ import SwiftUI
 import SwiftData
 
 @main
-struct Varmetilf_rselApp: App {
-    var sharedModelContainer: ModelContainer = {
+struct SveiseformlerApp: App {
+    // 1. Hent valgt språk. Merk at vi endret default til "nb" tidligere.
+    @AppStorage("app_language") private var languageCode: String = "nb"
+
+/**    var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            SavedCalculation.self,
+            DictionaryTerm.self,
+            WeldGroup.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -21,11 +26,14 @@ struct Varmetilf_rselApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }() */
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // 2. Setter språket i miljøet
+                .environment(\.locale, Locale(identifier: languageCode))
+
         }
         .modelContainer(sharedModelContainer)
     }
