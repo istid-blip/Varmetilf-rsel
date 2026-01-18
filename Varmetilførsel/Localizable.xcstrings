@@ -13,6 +13,22 @@
     "• LOGGING" : {
 
     },
+    "© %@ Frode Halrynjo. Med enerett." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© %@ Frode Halrynjo. All rights reserved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "© %@ Frode Halrynjo. Med enerett."
+          }
+        }
+      }
+    },
     "×" : {
 
     },
@@ -48,7 +64,14 @@
       }
     },
     "CANCEL" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANGRE"
+          }
+        }
+      }
     },
     "CONFIGURATION" : {
       "localizations" : {
@@ -61,13 +84,34 @@
       }
     },
     "CURRENT PASS (kJ/mm)" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DENNE STRENGEN (kJ/mm)"
+          }
+        }
+      }
     },
     "FINISH" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FERDIG"
+          }
+        }
+      }
     },
     "HEAT INPUT" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VARMETILFØRSEL"
+          }
+        }
+      }
     },
     "ISO 17671" : {
 
@@ -95,10 +139,24 @@
       }
     },
     "LOG PASS #%lld" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LOGG STRENG #%lld"
+          }
+        }
+      }
     },
     "LOGGED PASSES (%lld)" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LOGGFØRTE STRENGER (%lld)"
+          }
+        }
+      }
     },
     "NEW JOB" : {
       "localizations" : {
@@ -111,13 +169,34 @@
       }
     },
     "NO PASSES RECORDED" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "INGEN STRENGER LOGGET"
+          }
+        }
+      }
     },
     "PROCESS" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PROSESS"
+          }
+        }
+      }
     },
     "RECORDING..." : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LOGGER…"
+          }
+        }
+      }
     },
     "RESET" : {
 
@@ -144,20 +223,17 @@
     "START" : {
 
     },
-    "Sveiseformler v1.0.2" : {
-
-    },
-    "TERMINAL ID: %@-%@" : {
+    "TIMER READY" : {
       "localizations" : {
-        "en" : {
+        "nb" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "TERMINAL ID: %1$@-%2$@"
+            "state" : "translated",
+            "value" : "TIMER KLAR"
           }
         }
       }
     },
-    "TIMER READY" : {
+    "Varmetilførsel v1.0" : {
 
     },
     "VIBRATION FEEDBACK" : {

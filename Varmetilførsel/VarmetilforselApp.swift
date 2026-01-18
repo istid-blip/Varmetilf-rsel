@@ -130,7 +130,7 @@ struct HeatInputView: View {
                             }
                             Spacer()
                             Text("HEAT INPUT")
-                                .font(RetroTheme.font(size: 32, weight: .heavy))
+                                .font(RetroTheme.font(size: 26, weight: .heavy))
                                 .foregroundColor(RetroTheme.primary)
                             Spacer()
                             Color.clear

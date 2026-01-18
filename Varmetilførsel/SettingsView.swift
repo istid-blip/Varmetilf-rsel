@@ -113,7 +113,7 @@ struct SettingsView: View {
                 // HEADER
                 HStack {
                     
-
+                    
                     Text("CONFIGURATION")
                         .font(RetroTheme.font(size: 16, weight: .heavy))
                         .foregroundColor(RetroTheme.primary)
@@ -160,13 +160,15 @@ struct SettingsView: View {
                             rightLabel: "DISABLED [0]",
                             isLeftSelected: isHapticsOn
                         )
-
+                        
                         Spacer()
                         
-                        // INFO FOOTER
-                        VStack(spacing: 8) {
-                            Text("TERMINAL ID: \(UUID().uuidString.prefix(4))-\(UUID().uuidString.prefix(4))")
-                            Text("Sveiseformler v1.0.2")
+                        let year = Calendar.current.component(.year, from: Date())
+                        let yearString = year.formatted(.number.grouping(.never))
+
+                            VStack(spacing: 8) {
+                                Text("Varmetilførsel v1.0")
+                                Text("© \(yearString) Frode Halrynjo. Med enerett.")
                         }
                         .font(RetroTheme.font(size: 10))
                         .foregroundColor(RetroTheme.dim)
@@ -180,6 +182,10 @@ struct SettingsView: View {
         }
         .crtScreen()
         .navigationBarHidden(true)
+        
+        
     }
+    
+    
 }
 
