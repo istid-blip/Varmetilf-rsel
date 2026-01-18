@@ -65,7 +65,7 @@ struct HeatInputView: View {
     var heatInput: Double {
         let v = voltageStr.toDouble; let i = amperageStr.toDouble; let t = timeStr.toDouble; let l = lengthStr.toDouble
         return l == 0 ? 0 : ((v * i * t) / (l * 1000)) * efficiency
-    } //Formelen for varmetilførsel. .toDouble konverterer eventuell tekst til tall.
+    } //Formelen for varmetilførsel. .toDouble konverterer tekst til tall, eller for å si det slik, komma til punktum.
     
     var calculatedSpeed: Double {
         let l = lengthStr.toDouble; let t = timeStr.toDouble
