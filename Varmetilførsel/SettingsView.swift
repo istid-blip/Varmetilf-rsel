@@ -161,6 +161,16 @@ struct SettingsView: View {
                             isLeftSelected: isHapticsOn
                         )
                         
+                        // DEKORATIV LINJE
+                        Rectangle()
+                            .fill(RetroTheme.dim.opacity(0.3))
+                            .frame(height: 1)
+                            .padding(.vertical, 20)
+
+                        // SECTION: MANUAL
+                        // Her viser vi den detaljerte versjonen av guiden
+                        RetroGuideView(isDetailed: true)
+
                         Spacer()
                         
                         let year = Calendar.current.component(.year, from: Date())

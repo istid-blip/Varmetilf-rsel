@@ -68,7 +68,7 @@ struct HeatInputView: View {
     @Query(sort: \WeldGroup.date, order: .reverse) private var jobHistory: [WeldGroup] //Denne bruker SavedCalculation for å sortere og vise sveisejobbene
     
     // STORAGE
-    @AppStorage("heat_selected_process_name") private var selectedProcessName: String = "MAG / FCAW"
+    @AppStorage("heat_selected_process_name") private var selectedProcessName: String = "None"
     @AppStorage("heat_voltage") private var voltageStr: String = ""
     @AppStorage("heat_amperage") private var amperageStr: String = ""
     @AppStorage("heat_time") private var timeStr: String = ""
@@ -91,14 +91,16 @@ struct HeatInputView: View {
     }
     
     private let processes = [
+        WeldingProcess(name: "None", code: "RAW", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
         WeldingProcess(name: "SAW (Pulver)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
         WeldingProcess(name: "MMA (Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
-        WeldingProcess(name: "MAG / FCAW", code: "135/136", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "TIG / GTAW", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
+        WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
+        WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
         WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
+
     ]
     
-    var currentProcess: WeldingProcess { processes.first(where: { $0.name == selectedProcessName }) ?? processes[2] }
+    var currentProcess: WeldingProcess { processes.first(where: { $0.name == selectedProcessName }) ?? processes.first! }
 
     var heatInput: Double {
         let v = voltageStr.toDouble; let i = amperageStr.toDouble; let t = timeStr.toDouble; let l = lengthStr.toDouble
@@ -143,8 +145,9 @@ struct HeatInputView: View {
                             HStack(alignment: .top, spacing: 0) {
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                    RetroDropdown(title: "PROCESS", selection: currentProcess, options: processes, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { "ISO 4063: \($0.code)" })
-                                        .allowsHitTesting(focusedField == nil).opacity(focusedField != nil ? 0.6 : 1.0)
+                                    RetroDropdown(title: "PROCESS", selection: currentProcess, options: processes, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in
+                                        process.code == "RAW" ? "ISO/TR 18491: arc energy" : "ISO 4063: \(process.code)"})
+                                        .allowsHitTesting(focusedField == nil).opacity(focusedField != nil ? 0.6 : 1.0).frame(maxWidth: .infinity)
                                 }.frame(maxWidth: .infinity, alignment: .leading)
                                 
                                 Spacer(minLength: 20)
@@ -172,12 +175,15 @@ struct HeatInputView: View {
                                 } else {
                                     VStack(spacing: 15) {
                                         HStack(alignment: .center, spacing: 8) {
-                                            VStack(spacing: 0) {
-                                                Text("ISO 17671").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                                Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
-                                                Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                            }
-                                            Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
+                                            if currentProcess.code != "RAW" {
+                                                                                        VStack(spacing: 0) {
+                                                                                            Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                                                                            Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
+                                                                                            Text("ISO 17671").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                                                                        }
+                                                                                        Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
+                                                                                    }
+                                            
                                             VStack(spacing: 4) {
                                                 HStack(alignment: .bottom, spacing: 6) {
                                                     SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
@@ -199,9 +205,6 @@ struct HeatInputView: View {
                                 }
                             }.padding(.horizontal).frame(height: 180)
                             
-
-                            
-                            // KNAPPER
                             HStack(spacing: 15) {
                                 Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) {
                                     VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
@@ -212,14 +215,33 @@ struct HeatInputView: View {
                                 }.disabled(heatInput == 0 || isNamingJob)
                             }.padding(.horizontal)
                             
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: 15) {
-                                    if !jobHistory.isEmpty {
-                                        Text("> JOB HISTORY").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 10)
-                                        LazyVStack(spacing: 12) { ForEach(jobHistory) { job in NavigationLink(destination: JobDetailView(job: job)) { RetroJobRow(job: job, isActive: job.id == activeJobID) }.buttonStyle(PlainButtonStyle()) } }
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: 15) {
+                                        
+                                        // SJEKKER OM HISTORIKKEN ER TOM
+                                        if jobHistory.isEmpty {
+                                            RetroGuideView(isDetailed: false)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        } else {
+                                            // Eksisterende liste
+                                            Text("> JOB HISTORY")
+                                                .font(RetroTheme.font(size: 14, weight: .bold))
+                                                .foregroundColor(RetroTheme.primary)
+                                                .padding(.top, 10)
+                                            
+                                            LazyVStack(spacing: 12) {
+                                                ForEach(jobHistory) { job in
+                                                    NavigationLink(destination: JobDetailView(job: job)) {
+                                                        RetroJobRow(job: job, isActive: job.id == activeJobID)
+                                                    }
+                                                    .buttonStyle(PlainButtonStyle())
+                                                }
+                                            }
+                                        }
                                     }
-                                }.padding(.horizontal).padding(.bottom, 320)
-                            }
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 320)
+                                }
                         }
                     }.frame(height: geometry.size.height).offset(y: -5).contentShape(Rectangle()).onTapGesture { if focusedField != nil { withAnimation { focusedField = nil } } }
                 }
