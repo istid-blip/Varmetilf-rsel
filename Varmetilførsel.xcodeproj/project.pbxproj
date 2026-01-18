@@ -35,16 +35,6 @@
 			path = "Varmetilførsel";
 			sourceTree = "<group>";
 		};
-		CA1E61032F1C4DAD00E6EF96 /* VarmetilførselTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "VarmetilførselTests";
-			sourceTree = "<group>";
-		};
-		CA1E610D2F1C4DAD00E6EF96 /* VarmetilførselUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "VarmetilførselUITests";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,8 +66,6 @@
 			isa = PBXGroup;
 			children = (
 				CA1E60F32F1C4DAA00E6EF96 /* Varmetilførsel */,
-				CA1E61032F1C4DAD00E6EF96 /* VarmetilførselTests */,
-				CA1E610D2F1C4DAD00E6EF96 /* VarmetilførselUITests */,
 				CA1E60F22F1C4DAA00E6EF96 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -130,9 +118,6 @@
 			dependencies = (
 				CA1E61022F1C4DAD00E6EF96 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				CA1E61032F1C4DAD00E6EF96 /* VarmetilførselTests */,
-			);
 			name = "VarmetilførselTests";
 			packageProductDependencies = (
 			);
@@ -152,9 +137,6 @@
 			);
 			dependencies = (
 				CA1E610C2F1C4DAD00E6EF96 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				CA1E610D2F1C4DAD00E6EF96 /* VarmetilførselUITests */,
 			);
 			name = "VarmetilførselUITests";
 			packageProductDependencies = (
