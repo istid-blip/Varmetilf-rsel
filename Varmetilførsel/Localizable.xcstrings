@@ -13,7 +13,7 @@
     "%lld passes" : {
 
     },
-    "• LOGGING" : {
+    "• ACTIVE JOB" : {
 
     },
     "© %@ Frode Halrynjo. Med enerett." : {
@@ -51,6 +51,9 @@
 
     },
     "10" : {
+
+    },
+    "ACTIVE JOB" : {
 
     },
     "AVG: %@ kJ/mm" : {
