@@ -103,6 +103,8 @@ struct SettingsView: View {
         )
     }
     
+    @Binding var showSettings: Bool //Kobling for å få settings inn og ut fra venstre
+    
     var body: some View {
         ZStack {
             RetroTheme.background.ignoresSafeArea()
@@ -110,17 +112,24 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 // HEADER
                 HStack {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 5) { Text("< MAIN MENU") }
-                            .font(RetroTheme.font(size: 16, weight: .bold))
+                    
+
+                    Text("CONFIGURATION")
+                        .font(RetroTheme.font(size: 16, weight: .heavy))
+                        .foregroundColor(RetroTheme.primary)
+                    Spacer()
+                    Button(action: {
+                        withAnimation(.easeInOut) {
+                            showSettings = false
+                        }
+                    }){
+                        Text("BACK")
+                            .font(RetroTheme.font(size: 16, weight: .heavy))
                             .foregroundColor(RetroTheme.primary)
                             .padding(8)
                             .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                     }
-                    Spacer()
-                    Text("CONFIGURATION")
-                        .font(RetroTheme.font(size: 16, weight: .heavy))
-                        .foregroundColor(RetroTheme.primary)
+                    
                 }
                 .padding()
                 
@@ -134,7 +143,7 @@ struct SettingsView: View {
                         
                         // SECTION: LANGUAGE
                         RetroSlideSwitch(
-                            title: "SYSTEM LANGUAGE",
+                            title: "LANGUAGE",
                             leftLabel: "NORSK (NO)",
                             rightLabel: "ENGLISH (EN)",
                             isLeftSelected: isNorwegian
@@ -146,7 +155,7 @@ struct SettingsView: View {
                         // Her: Venstre = PÅ, Høyre = AV (eller omvendt etter preferanse).
                         // La oss kjøre: Venstre = ON, Høyre = OFF for å matche "1" og "0".
                         RetroSlideSwitch(
-                            title: "HAPTIC FEEDBACK (VIBRATION)",
+                            title: "VIBRATION FEEDBACK",
                             leftLabel: "ENABLED [1]",
                             rightLabel: "DISABLED [0]",
                             isLeftSelected: isHapticsOn

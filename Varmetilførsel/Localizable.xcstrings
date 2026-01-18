@@ -1,0 +1,175 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "/" : {
+
+    },
+    "%lld passes" : {
+
+    },
+    "• LOGGING" : {
+
+    },
+    "×" : {
+
+    },
+    "< BACK" : {
+
+    },
+    "> JOB HISTORY" : {
+
+    },
+    "▲" : {
+
+    },
+    "▼" : {
+
+    },
+    "3" : {
+
+    },
+    "10" : {
+
+    },
+    "AVG: %@ kJ/mm" : {
+
+    },
+    "BACK" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TILBAKE"
+          }
+        }
+      }
+    },
+    "CANCEL" : {
+
+    },
+    "CONFIGURATION" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KONFIGURASJON"
+          }
+        }
+      }
+    },
+    "CURRENT PASS (kJ/mm)" : {
+
+    },
+    "FINISH" : {
+
+    },
+    "HEAT INPUT" : {
+
+    },
+    "ISO 17671" : {
+
+    },
+    "JOB METADATA" : {
+
+    },
+    "Job Name / ID" : {
+
+    },
+    "JOB_EDITOR_V1" : {
+
+    },
+    "k-factor" : {
+
+    },
+    "LANGUAGE" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SPRÅK"
+          }
+        }
+      }
+    },
+    "LOG PASS #%lld" : {
+
+    },
+    "LOGGED PASSES (%lld)" : {
+
+    },
+    "NEW JOB" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NY JOBB"
+          }
+        }
+      }
+    },
+    "NO PASSES RECORDED" : {
+
+    },
+    "PROCESS" : {
+
+    },
+    "RECORDING..." : {
+
+    },
+    "RESET" : {
+
+    },
+    "SAVE & RESET" : {
+
+    },
+    "SAVE JOB RECORD" : {
+
+    },
+    "SEC" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SEK"
+          }
+        }
+      }
+    },
+    "Speed: %@ mm/min" : {
+
+    },
+    "START" : {
+
+    },
+    "Sveiseformler v1.0.2" : {
+
+    },
+    "TERMINAL ID: %@-%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TERMINAL ID: %1$@-%2$@"
+          }
+        }
+      }
+    },
+    "TIMER READY" : {
+
+    },
+    "VIBRATION FEEDBACK" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIBRASJONSRESPONS"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
