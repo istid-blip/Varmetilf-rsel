@@ -1,15 +1,15 @@
 //
-//  HeatInputVIew.swift
+//  HeatInputView.swift
 //  Varmetilførsel
 //
-//  Created by Frode Halrynjo on 19/01/2026.
+//  Created by Frode Halrynjo on 18/01/2026.
 //
-
 
 import SwiftUI
 import SwiftData
 import Combine
 
+// --- 1. SVEISEPROSESS MODELL ---
 struct WeldingProcess: Identifiable, Hashable {
     let id = UUID()
     let name: String
@@ -19,6 +19,7 @@ struct WeldingProcess: Identifiable, Hashable {
     let defaultAmperage: String
 }
 
+// --- 2. HOVEDVISNING ---
 struct HeatInputView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -33,7 +34,7 @@ struct HeatInputView: View {
     @State private var tempJobName: String = ""
     @FocusState private var isJobNameFocused: Bool
     
-    @Query(sort: \WeldGroup.date, order: .reverse) private var jobHistory: [WeldGroup] //Denne bruker SavedCalculation for å sortere og vise sveisejobbene
+    @Query(sort: \WeldGroup.date, order: .reverse) private var jobHistory: [WeldGroup]
     
     // STORAGE
     @AppStorage("heat_selected_process_name") private var selectedProcessName: String = "Arc energy"
@@ -46,7 +47,7 @@ struct HeatInputView: View {
     @AppStorage("heat_active_job_id") private var storedJobID: String = ""
     @State private var currentJobName: String = ""
     
-    // STOPWATCH STORAGE (Overlever app-lukking)
+    // STOPWATCH STORAGE
     @AppStorage("stopwatch_is_running") private var isTimerRunning: Bool = false
     @AppStorage("stopwatch_start_timestamp") private var timerStartTimestamp: Double = 0.0
     @AppStorage("stopwatch_accumulated_time") private var timerAccumulatedTime: Double = 0.0
@@ -65,7 +66,6 @@ struct HeatInputView: View {
         WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
         WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
         WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
-
     ]
     
     var currentProcess: WeldingProcess { processes.first(where: { $0.name == selectedProcessName }) ?? processes.first! }
@@ -73,7 +73,7 @@ struct HeatInputView: View {
     var heatInput: Double {
         let v = voltageStr.toDouble; let i = amperageStr.toDouble; let t = timeStr.toDouble; let l = lengthStr.toDouble
         return l == 0 ? 0 : ((v * i * t) / (l * 1000)) * efficiency
-    } //Formelen for varmetilførsel. .toDouble konverterer tekst til tall, eller for å si det slik, komma til punktum.
+    }
     
     var calculatedSpeed: Double {
         let l = lengthStr.toDouble; let t = timeStr.toDouble
@@ -83,164 +83,163 @@ struct HeatInputView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                // 1. BAKGRUNN
                 RetroTheme.background.ignoresSafeArea()
                 
-                ZStack {
-                    if focusedField != nil {
-                                    Color.black.opacity(0.001) // Nesten usynlig, men fanger trykk
-                                        .ignoresSafeArea()
-                                        .onTapGesture {
-                                            withAnimation { focusedField = nil }
-                                        }
-                                }
-                    VStack(spacing: 0) {
-                        HStack {
-                            Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){
-                                showSettings = true
-                            }
-                            }){
-                                Image(systemName: "gearshape.fill") // Bruker SF Symbol
-                                    .font(.system(size: 20))
-                                    .foregroundColor(RetroTheme.primary)
-                                    .padding(8)
-
-                            }
-                            Spacer()
-                            Text("HEAT INPUT")
-                                .font(RetroTheme.font(size: 26, weight: .heavy))
-                                .foregroundColor(RetroTheme.primary)
-                            Spacer()
-                            Color.clear
-                                .frame(width: 40, height: 40)
+                // 2. KLIKK-FANGER (Ligger bak innholdet, men fanger opp trykk fra "disabled" elementer)
+                if focusedField != nil {
+                    Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { focusedField = nil }
                         }
-                        .padding()
+                        .zIndex(1)
+                }
+                
+                ZStack {
+                    VStack(spacing: 0) {
                         
-                        // FORMEL-OMRÅDE
-                        VStack(spacing: 25) {
-                            HStack(alignment: .top, spacing: 0) {
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                    RetroDropdown(title: "PROCESS", selection: currentProcess, options: processes, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in
-                                        process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
-                                        .allowsHitTesting(focusedField == nil).opacity(focusedField != nil ? 0.6 : 1.0).frame(maxWidth: .infinity)
+                        // --- GRUPPE 1: TOPPEN (Deaktiveres når skuffen er åpen) ---
+                        Group {
+                            // Header
+                            HStack {
+                                Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){ showSettings = true } }){
+                                    Image(systemName: "gearshape.fill").font(.system(size: 20)).foregroundColor(RetroTheme.primary).padding(8)
                                 }
-                                
-                                Spacer(minLength: 20)
-                                
-                                VStack(alignment: .trailing, spacing: 1) {
-                                    Text("CURRENT PASS (kJ/mm)").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                    Text(String(format: "%.2f", heatInput)).font(RetroTheme.font(size: 36, weight: .black)).foregroundColor(RetroTheme.primary).shadow(color: RetroTheme.primary.opacity(0.5), radius: 5)
-                                    if activeJobID != nil { Text("• ACTIVE JOB").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.primary).blinkEffect() }
-                                }.frame(minWidth: 160, alignment: .trailing)
-                            }.padding(.horizontal)
-                            .zIndex(100)
-                            // INPUT BOKS
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10).fill(isNamingJob ? Color.green.opacity(0.15) : Color.black.opacity(0.2)).stroke(isNamingJob ? Color.green : RetroTheme.dim, lineWidth: isNamingJob ? 2 : 1)
-                                
-                                if isNamingJob {
-                                    VStack(spacing: 15) {
-                                        Text("SAVE JOB RECORD").font(RetroTheme.font(size: 12, weight: .bold)).foregroundColor(Color.green)
-                                        TextField("Job Name / ID", text: $tempJobName).font(RetroTheme.font(size: 18, weight: .bold)).foregroundColor(Color.green).padding(10).background(Color.black.opacity(0.5)).overlay(Rectangle().stroke(Color.green, lineWidth: 1)).padding(.horizontal, 30).focused($isJobNameFocused).onSubmit { finalizeAndSaveJob() }
-                                        HStack(spacing: 20) {
-                                            Button("CANCEL") { withAnimation { isNamingJob = false } }.font(RetroTheme.font(size: 11)).foregroundColor(Color.green.opacity(0.7))
-                                            Button("SAVE & RESET") { finalizeAndSaveJob() }.font(RetroTheme.font(size: 11, weight: .bold)).foregroundColor(.black).padding(10).background(Color.green)
+                                Spacer()
+                                Text("HEAT INPUT").font(RetroTheme.font(size: 26, weight: .heavy)).foregroundColor(RetroTheme.primary)
+                                Spacer()
+                                Color.clear.frame(width: 40, height: 40)
+                            }
+                            .padding()
+                            
+                            // Prosessvelger og resultat
+                            VStack(spacing: 25) {
+                                HStack(alignment: .top, spacing: 0) {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: processes, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    Spacer(minLength: 20)
+                                    VStack(alignment: .trailing, spacing: 1) {
+                                        Text("CURRENT PASS (kJ/mm)").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                        Text(String(format: "%.2f", heatInput)).font(RetroTheme.font(size: 36, weight: .black)).foregroundColor(RetroTheme.primary).shadow(color: RetroTheme.primary.opacity(0.5), radius: 5)
+                                        if activeJobID != nil { Text("• ACTIVE JOB").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.primary).blinkEffect() }
+                                    }.frame(minWidth: 160, alignment: .trailing)
+                                }.padding(.horizontal)
+                            }
+                        }
+                        .disabled(focusedField != nil) // <--- MAGIEN: Gjør at trykk her "faller gjennom" til bakgrunnen som lukker skuffen
+                        .zIndex(10)
+                        
+                        
+                        // --- GRUPPE 2: INPUT BOKS (UNNTAKET - Alltid aktiv!) ---
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10).fill(isNamingJob ? Color.green.opacity(0.15) : Color.black.opacity(0.2)).stroke(isNamingJob ? Color.green : RetroTheme.dim, lineWidth: isNamingJob ? 2 : 1)
+                            
+                            if isNamingJob {
+                                VStack(spacing: 15) {
+                                    Text("SAVE JOB RECORD").font(RetroTheme.font(size: 12, weight: .bold)).foregroundColor(Color.green)
+                                    TextField("Job Name / ID", text: $tempJobName).font(RetroTheme.font(size: 18, weight: .bold)).foregroundColor(Color.green).padding(10).background(Color.black.opacity(0.5)).overlay(Rectangle().stroke(Color.green, lineWidth: 1)).padding(.horizontal, 30).focused($isJobNameFocused).onSubmit { finalizeAndSaveJob() }
+                                    HStack(spacing: 20) {
+                                        Button("CANCEL") { withAnimation { isNamingJob = false } }.font(RetroTheme.font(size: 11)).foregroundColor(Color.green.opacity(0.7))
+                                        Button("SAVE & RESET") { finalizeAndSaveJob() }.font(RetroTheme.font(size: 11, weight: .bold)).foregroundColor(.black).padding(10).background(Color.green)
+                                    }
+                                }
+                            } else {
+                                VStack(spacing: 15) {
+                                    HStack(alignment: .center, spacing: 8) {
+                                        if currentProcess.code != "RAW" {
+                                            VStack(spacing: 0) {
+                                                Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                                Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
+                                                Text("ISO 17671").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                                            }
+                                            Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
+                                        }
+                                        
+                                        VStack(spacing: 4) {
+                                            HStack(alignment: .bottom, spacing: 6) {
+                                                SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
+                                                Text("×").foregroundColor(RetroTheme.dim)
+                                                SelectableInput(label: "Current (A)", value: amperageStr.toDouble, target: .amperage, currentFocus: focusedField, precision: 0) { focusedField = .amperage }
+                                            }
+                                            Rectangle().fill(RetroTheme.primary).frame(height: 2)
+                                            HStack(alignment: .top, spacing: 4) {
+                                                SelectableInput(label: "Length (mm)", value: lengthStr.toDouble, target: .length, currentFocus: focusedField, precision: 0) { focusedField = .length }
+                                                Text("/").font(RetroTheme.font(size: 16)).foregroundColor(RetroTheme.dim).padding(.top, 10)
+                                                SelectableInput(label: "time (s)", value: timeStr.toDouble, target: .time, currentFocus: focusedField, precision: 0) { focusedField = .time }
+                                                Text("×").foregroundColor(RetroTheme.dim).padding(.top, 10)
+                                                HStack(alignment: .top, spacing: 0) { Text("10").font(RetroTheme.font(size: 16, weight: .bold)); Text("3").font(RetroTheme.font(size: 10, weight: .bold)).baselineOffset(8) }.foregroundColor(RetroTheme.dim).padding(.top, 8)
+                                            }
+                                            Text("Speed: \(String(format: "%.0f", calculatedSpeed)) mm/min").font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.dim).padding(.trailing, 40)
                                         }
                                     }
-                                } else {
-                                    VStack(spacing: 15) {
-                                        HStack(alignment: .center, spacing: 8) {
-                                            if currentProcess.code != "RAW" {
-                                                                                        VStack(spacing: 0) {
-                                                                                            Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                                                                            Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
-                                                                                            Text("ISO 17671").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                                                                        }
-                                                                                        Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
-                                                                                    }
-                                            
-                                            
-                                            VStack(spacing: 4) {
-                                                HStack(alignment: .bottom, spacing: 6) {
-                                                    SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
-                                                    Text("×").foregroundColor(RetroTheme.dim)
-                                                    SelectableInput(label: "Current (A)", value: amperageStr.toDouble, target: .amperage, currentFocus: focusedField, precision: 0) { focusedField = .amperage }
-                                                }
-                                                Rectangle().fill(RetroTheme.primary).frame(height: 2)
-                                                HStack(alignment: .top, spacing: 4) {
-                                                    SelectableInput(label: "Length (mm)", value: lengthStr.toDouble, target: .length, currentFocus: focusedField, precision: 0) { focusedField = .length }
-                                                    Text("/").font(RetroTheme.font(size: 16)).foregroundColor(RetroTheme.dim).padding(.top, 10)
-                                                    SelectableInput(label: "time (s)", value: timeStr.toDouble, target: .time, currentFocus: focusedField, precision: 0) { focusedField = .time }
-                                                    Text("×").foregroundColor(RetroTheme.dim).padding(.top, 10)
-                                                    HStack(alignment: .top, spacing: 0) { Text("10").font(RetroTheme.font(size: 16, weight: .bold)); Text("3").font(RetroTheme.font(size: 10, weight: .bold)).baselineOffset(8) }.foregroundColor(RetroTheme.dim).padding(.top, 8)
-                                                }
-                                                Text("Speed: \(String(format: "%.0f", calculatedSpeed)) mm/min").font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.dim).padding(.trailing, 40)
-                                            }
-                                        }
-                                    }.padding()
-                                }
-                            }.padding(.horizontal).frame(height: 180)
-                            
-                            
+                                }.padding()
+                                
+                            }
+                        }.padding(.horizontal).frame(height: 180).padding(.top, 25)
+                        // --- NY KODE STARTER HER ---
+                        .contentShape(Rectangle()) // Gjør at hele boksen (også tomrom) reagerer på trykk
+                        .onTapGesture {
+                            // Hvis skuffen er oppe og vi trykker i boksen (men ikke på knappene), lukk skuffen
+                            if focusedField != nil {
+                                withAnimation { focusedField = nil }
+                            }
+                        }
+                        
+                        
+                        // --- GRUPPE 3: BUNNEN (Deaktiveres når skuffen er åpen) ---
+                        Group {
                             HStack(spacing: 15) {
                                 Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) {
                                     VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                                }.disabled(isNamingJob).allowsHitTesting(focusedField == nil).opacity((isNamingJob || focusedField != nil) ? 0.3 : 1.0)
+                                }
                                 
                                 Button(action: logPass) {
                                     HStack { Text("LOG PASS #\(passCounter)").font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
                                 }
-                                // HER ER ENDRINGEN:
-                                .disabled(heatInput == 0 || isNamingJob || focusedField != nil)
-                                // VALGFRITT: Gjør knappen litt gjennomsiktig når skuffen er oppe for å vise at den er inaktiv
-                                .opacity(focusedField != nil ? 0.6 : 1.0)
                                 .disabled(heatInput == 0 || isNamingJob)
-                            }.padding(.horizontal)
+                            }.padding(.horizontal).padding(.top, 25)
                             
-                                ScrollView {
-                                    VStack(alignment: .leading, spacing: 15) {
-                                        
-                                        // SJEKKER OM HISTORIKKEN ER TOM
-                                        if jobHistory.isEmpty {
-                                            RetroGuideView(isDetailed: false)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                        } else {
-                                            // Eksisterende liste
-                                            Text("> JOB HISTORY")
-                                                .font(RetroTheme.font(size: 14, weight: .bold))
-                                                .foregroundColor(RetroTheme.primary)
-                                                .padding(.top, 10)
-                                            
-                                            LazyVStack(spacing: 12) {
-                                                ForEach(jobHistory) { job in
-                                                    NavigationLink(destination: JobDetailView(job: job)) {
-                                                        RetroJobRow(job: job, isActive: job.id == activeJobID)
-                                                    }
-                                                    .buttonStyle(PlainButtonStyle())
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 15) {
+                                    if jobHistory.isEmpty {
+                                        RetroGuideView(isDetailed: false).frame(maxWidth: .infinity, alignment: .leading)
+                                    } else {
+                                        Text("> JOB HISTORY").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 10)
+                                        LazyVStack(spacing: 12) {
+                                            ForEach(jobHistory) { job in
+                                                NavigationLink(destination: JobDetailView(job: job)) {
+                                                    RetroJobRow(job: job, isActive: job.id == activeJobID)
                                                 }
+                                                .buttonStyle(PlainButtonStyle())
                                             }
                                         }
                                     }
-                                    .padding(.horizontal)
-                                    .padding(.bottom, focusedField != nil ? 320 : 20)
-                                    .animation(.easeOut(duration: 0.3), value: focusedField != nil) // Legg gjerne til denne for myk overgang
                                 }
+                                .padding(.horizontal)
+                                .padding(.bottom, focusedField != nil ? 320 : 20)
+                                .animation(.easeOut(duration: 0.3), value: focusedField != nil)
+                            }
                         }
+                        .disabled(focusedField != nil) // <--- OGSÅ DEAKTIVERT
+                        
                     }.frame(height: geometry.size.height)
-          
                 }
-                
                 .offset(x: showSettings ? 300 : 0)
                 .opacity(showSettings ? 0 : 1)
+                .zIndex(2) // Ligger visuelt over klikk-fangeren
                 
-                // 2. SETTINGS VIEW (Glir inn fra venstre)
-                            if showSettings {
-                                SettingsView(showSettings: $showSettings)
-                                    .transition(.move(edge: .leading))
-                                    .zIndex(1) // Sikrer at denne ligger øverst
-                            }
+                // SETTINGS VIEW
+                if showSettings {
+                    SettingsView(showSettings: $showSettings)
+                        .transition(.move(edge: .leading))
+                        .zIndex(1)
+                }
 
-                // SKUFF
+                // SKUFF (DRAWER)
                 if let target = focusedField {
                     VStack {
                         Spacer()
@@ -260,8 +259,6 @@ struct HeatInputView: View {
             }
         }
     }
-    
-    
     
     // --- HJELPEFUNKSJONER ---
     func toggleStopwatch() {
@@ -295,8 +292,7 @@ struct HeatInputView: View {
     func startNewSession() { activeJobID = nil; passCounter = 1; currentJobName = ""; Haptics.play(.medium) }
     func finalizeAndSaveJob() { withAnimation { isNamingJob = false }; startNewSession(); UINotificationFeedbackGenerator().notificationOccurred(.success) }
 }
-
-// --- 3. UNIFIED DRAWER ---
+// --- 3. UNIFIED DRAWER (SKUFFEN) ---
 struct UnifiedInputDrawer: View {
     let target: HeatInputView.InputTarget
     @Binding var value: Double
@@ -305,24 +301,30 @@ struct UnifiedInputDrawer: View {
     @Binding var isRecording: Bool
     var onReset: () -> Void
     var onToggle: () -> Void
-    var onSync: (Double) -> Void // <--- NY PARAMETER
+    var onSync: (Double) -> Void
     
     @State private var pulseAmount: CGFloat = 1.0
     @State private var dragOffset: CGFloat = 0
     @State private var lastDragValue: CGFloat = 0
     @State private var showManualInput: Bool = false
     
+    // Konfigurasjon for linjal
+    private let visibleTicks = 6
+    private func calculateOpacity(yPos: CGFloat, height: CGFloat) -> Double {
+        let dist = abs((height/2) - yPos)
+        return dist > (height/2-10) ? 0 : 1 - Double(dist/(height/2-10))
+    }
+    
     var body: some View {
         ZStack {
-            // 1. BAKGRUNN
+            // Bakgrunn
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.black)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(RetroTheme.dim, lineWidth: 1))
                 .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 15)
             
-            // 2. INNHOLD
             if target == .time && !showManualInput {
-                // --- MODUS 1: STOPPEKLOKKE ---
+                // --- TIMER VISNING ---
                 VStack(spacing: 20) {
                     Text(isRecording ? "RECORDING..." : "TIMER READY")
                         .font(RetroTheme.font(size: 10, weight: .bold))
@@ -387,7 +389,7 @@ struct UnifiedInputDrawer: View {
                 }
                 
             } else {
-                // --- MODUS 2: RULLE (SCROLL WHEEL) ---
+                // --- RULLEHJUL (SCROLLER) VISNING ---
                 GeometryReader { geo in
                     let midY = geo.size.height / 2
                     ZStack {
@@ -428,20 +430,18 @@ struct UnifiedInputDrawer: View {
                 )
             }
             
-            // 3. VEKSEL-KNAPP
+            // Knapp for å bytte til manuell inntasting (hvis timer)
             if target == .time {
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
                         Button(action: {
-                            // SJEKK: Hvis vi går fra Manuell -> Timer, synkroniser tiden!
                             if showManualInput {
                                 onSync(value)
                             }
                             withAnimation(.spring()) { showManualInput.toggle() }
                         }) {
-                            // NYTT SYMBOL: slider.horizontal.3 (Ser ut som justeringer)
                             Image(systemName: showManualInput ? "timer" : "slider.horizontal.3")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(RetroTheme.primary)
@@ -460,15 +460,9 @@ struct UnifiedInputDrawer: View {
         }
         .frame(width: 320, height: 280)
     }
-    
-    // Hjelpevariabler
-    private let visibleTicks = 6
-    private func calculateOpacity(yPos: CGFloat, height: CGFloat) -> Double {
-        let dist = abs((height/2) - yPos)
-        return dist > (height/2-10) ? 0 : 1 - Double(dist/(height/2-10))
-    }
 }
 
+// --- 4. RETRO JOB ROW (HISTORIKK LISTE ELEMENT) ---
 struct RetroJobRow: View {
     let job: WeldGroup
     let isActive: Bool
@@ -481,14 +475,13 @@ struct RetroJobRow: View {
                         .font(RetroTheme.font(size: 16, weight: .bold))
                         .foregroundColor(isActive ? Color.green : RetroTheme.primary)
                     
-                    // Ny "ACTIVE"-badge som vises når jobben er valgt
                     if isActive {
                         Text("ACTIVE JOB")
                             .font(RetroTheme.font(size: 8, weight: .heavy))
-                            .foregroundColor(.black) // Svart tekst
+                            .foregroundColor(.black)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(Color.green) // På grønn plate
+                            .background(Color.green)
                     }
                 }
                 
@@ -499,33 +492,24 @@ struct RetroJobRow: View {
             
             Spacer()
             
-            // Dato vises alltid, men får litt farge hvis aktiv
             Text(job.date, format: .dateTime.day().month())
                 .font(RetroTheme.font(size: 12))
                 .foregroundColor(isActive ? Color.green.opacity(0.8) : RetroTheme.dim)
             
-            // En liten pil eller indikator til høyre
             if isActive {
                 Image(systemName: "record.circle")
                     .font(.system(size: 10))
                     .foregroundColor(.green)
-                    .blinkEffect() // Gjenbruk av blinke-effekten din hvis du vil, eller fjern den
+                    .blinkEffect()
             }
         }
         .padding(12)
-        // Bakgrunnen får en svak grønn tåke når den er aktiv
         .background(isActive ? Color.green.opacity(0.15) : Color.black.opacity(0.3))
-        // Rammen blir tykkere og lyser grønt
         .overlay(
             Rectangle()
                 .stroke(isActive ? Color.green : RetroTheme.dim.opacity(0.5), lineWidth: isActive ? 2 : 1)
         )
-        // Legger til en ytre glød (glow)
         .shadow(color: isActive ? Color.green.opacity(0.4) : .clear, radius: 8, x: 0, y: 0)
     }
 }
 
-
-#Preview {
-    HeatInputView()
-}
