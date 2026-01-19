@@ -6,6 +6,42 @@
 //
 import SwiftUI
 
+struct RetroCheckbox: View {
+    let label: String
+    let code: String
+    let isChecked: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: {
+            Haptics.selection()
+            action()
+        }) {
+            HStack {
+                Text(label)
+                    .font(RetroTheme.font(size: 14, weight: .bold))
+                    .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
+                
+                Spacer()
+                
+                Text(code)
+                    .font(RetroTheme.font(size: 10))
+                    .foregroundColor(RetroTheme.dim)
+                    .padding(.trailing, 8)
+                
+                // Retro checkboks stil: [X] eller [ ]
+                Text(isChecked ? "[X]" : "[ ]")
+                    .font(RetroTheme.font(size: 14, weight: .bold))
+                    .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
+            }
+            .padding(12)
+            .background(isChecked ? RetroTheme.primary.opacity(0.1) : Color.clear)
+            .overlay(Rectangle().stroke(isChecked ? RetroTheme.primary : RetroTheme.dim.opacity(0.3), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // --- NY KOMPONENT: RETRO SLIDE SWITCH ---
 struct RetroSlideSwitch: View {
     let title: LocalizedStringKey
@@ -86,6 +122,9 @@ struct SettingsView: View {
     // --- LAGREDE INNSTILLINGER ---
     @AppStorage("app_language") private var selectedLanguage: String = "nb"
     @AppStorage("enable_haptics") private var enableHaptics: Bool = true
+    // Vi lagrer prosesser som er SKJULT. Format: "111,141,15"
+        // Dette er sikrere enn å lagre de som er vist, i tilfelle vi legger til nye senere.
+        @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
     
     // Hjelpe-variabler for SlideSwitchen
     // Vi mapper app-storage variablene til en Bool for switchen
@@ -161,6 +200,40 @@ struct SettingsView: View {
                             isLeftSelected: isHapticsOn
                         )
                         
+                        
+                        // SECTION: PROCESS CONFIGURATION
+                                                Text("ACTIVE WELDING PROCESSES")
+                                                    .font(RetroTheme.font(size: 14))
+                                                    .foregroundColor(RetroTheme.primary)
+                                                    .padding(.bottom, 5)
+                                                
+                                                Text("Select which processes to show in the calculator.")
+                                                    .font(RetroTheme.font(size: 10))
+                                                    .foregroundColor(RetroTheme.dim)
+                                                    .padding(.bottom, 10)
+                                                
+                                                VStack(spacing: 8) {
+                                                    ForEach(WeldingProcess.allProcesses, id: \.self) { process in
+                                                        let isHidden = hiddenProcessCodes.contains(process.code)
+                                                        // Vi kan ikke skjule "RAW" (Arc Energy), den må alltid være der som fallback
+                                                        let isLocked = process.code == "RAW"
+                                                        
+                                                        RetroCheckbox(
+                                                            label: process.name,
+                                                            code: process.code,
+                                                            isChecked: !isHidden, // Den er sjekket hvis den IKKE er skjult
+                                                            action: {
+                                                                if !isLocked {
+                                                                    toggleProcess(process.code)
+                                                                }
+                                                            }
+                                                        )
+                                                        .opacity(isLocked ? 0.5 : 1.0) // Visuelt indiker at RAW er låst
+                                                    }
+                                                }
+                                                
+                                                Rectangle().fill(RetroTheme.dim.opacity(0.3)).frame(height: 1).padding(.vertical, 20)
+                        
                         // DEKORATIV LINJE
                         Rectangle()
                             .fill(RetroTheme.dim.opacity(0.3))
@@ -194,8 +267,26 @@ struct SettingsView: View {
         .navigationBarHidden(true)
         
         
+        
     }
+    // ... (resten av body-koden slutter her) ...
+        
+        // Funksjon for å legge til eller fjerne koder fra den lagrede strengen
+        private func toggleProcess(_ code: String) {
+            var codes = hiddenProcessCodes.split(separator: ",").map { String($0) }
+            
+            if codes.contains(code) {
+                // Hvis den er skjult -> fjern den (gjør den synlig)
+                codes.removeAll { $0 == code }
+            } else {
+                // Hvis den er synlig -> legg til i skjult-listen
+                codes.append(code)
+            }
+            
+            hiddenProcessCodes = codes.joined(separator: ",")
+        }
+
+    } // <--- Dette er den aller siste parentesen i SettingsView
     
-    
-}
+
 

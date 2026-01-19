@@ -17,6 +17,16 @@ struct WeldingProcess: Identifiable, Hashable {
     let kFactor: Double
     let defaultVoltage: String
     let defaultAmperage: String
+    
+    // VI FLYTTER LISTEN HIT SÅ DEN BLIR TILGJENGELIG OVERALT:
+    static let allProcesses = [
+        WeldingProcess(name: "Arc energy", code: "RAW", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
+        WeldingProcess(name: "SAW (Pulver)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
+        WeldingProcess(name: "MMA (Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
+        WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
+        WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
+        WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
+    ]
 }
 
 // --- 2. HOVEDVISNING ---
@@ -45,6 +55,7 @@ struct HeatInputView: View {
     @AppStorage("heat_efficiency") private var efficiency: Double = 0.8
     @AppStorage("heat_pass_counter") private var passCounter: Int = 1
     @AppStorage("heat_active_job_id") private var storedJobID: String = ""
+    @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
     @State private var currentJobName: String = ""
     
     // STOPWATCH STORAGE
@@ -59,16 +70,21 @@ struct HeatInputView: View {
         nonmutating set { storedJobID = newValue?.uuidString ?? "" }
     }
     
-    private let processes = [
-        WeldingProcess(name: "Arc energy", code: "RAW", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
-        WeldingProcess(name: "SAW (Pulver)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
-        WeldingProcess(name: "MMA (Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
-        WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
-        WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
-    ]
+    // Fjern den gamle 'private let processes = ...'
+        // Og bruk denne i stedet. Den filtrerer listen live!
+        var availableProcesses: [WeldingProcess] {
+            let hidden = hiddenProcessCodes.split(separator: ",").map { String($0) }
+            return WeldingProcess.allProcesses.filter { process in
+                // Behold prosessen hvis koden IKKE ligger i "skjult"-listen
+                !hidden.contains(process.code)
+            }
+        }
+        
+        // Oppdater currentProcess til å lete i den statiske listen for sikkerhets skyld
+        var currentProcess: WeldingProcess {
+            WeldingProcess.allProcesses.first(where: { $0.name == selectedProcessName }) ?? WeldingProcess.allProcesses.first!
+        }
     
-    var currentProcess: WeldingProcess { processes.first(where: { $0.name == selectedProcessName }) ?? processes.first! }
 
     var heatInput: Double {
         let v = voltageStr.toDouble; let i = amperageStr.toDouble; let t = timeStr.toDouble; let l = lengthStr.toDouble
@@ -118,7 +134,7 @@ struct HeatInputView: View {
                                 HStack(alignment: .top, spacing: 0) {
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: processes, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
+                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
                                             .frame(maxWidth: .infinity)
                                     }
                                     Spacer(minLength: 20)

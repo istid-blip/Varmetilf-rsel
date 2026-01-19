@@ -4,7 +4,13 @@
     "" : {
 
     },
+    "[ ]" : {
+
+    },
     "[%@]" : {
+
+    },
+    "[X]" : {
 
     },
     "/" : {
@@ -54,6 +60,9 @@
 
     },
     "ACTIVE JOB" : {
+
+    },
+    "ACTIVE WELDING PROCESSES" : {
 
     },
     "AVG: %@ kJ/mm" : {
@@ -228,6 +237,9 @@
           }
         }
       }
+    },
+    "Select which processes to show in the calculator." : {
+
     },
     "Speed: %@ mm/min" : {
 
