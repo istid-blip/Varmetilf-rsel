@@ -117,7 +117,15 @@ struct HeatInputView: View {
         GeometryReader { geometry in
             ZStack {
                 RetroTheme.background.ignoresSafeArea()
+                
                 ZStack {
+                    if focusedField != nil {
+                                    Color.black.opacity(0.001) // Nesten usynlig, men fanger trykk
+                                        .ignoresSafeArea()
+                                        .onTapGesture {
+                                            withAnimation { focusedField = nil }
+                                        }
+                                }
                     VStack(spacing: 0) {
                         HStack {
                             Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){
@@ -184,6 +192,7 @@ struct HeatInputView: View {
                                                                                         Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
                                                                                     }
                                             
+                                            
                                             VStack(spacing: 4) {
                                                 HStack(alignment: .bottom, spacing: 6) {
                                                     SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
@@ -204,6 +213,7 @@ struct HeatInputView: View {
                                     }.padding()
                                 }
                             }.padding(.horizontal).frame(height: 180)
+                            
                             
                             HStack(spacing: 15) {
                                 Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) {
@@ -262,13 +272,7 @@ struct HeatInputView: View {
                                     .transition(.move(edge: .leading))
                                     .zIndex(1) // Sikrer at denne ligger øverst
                             }
-                if focusedField != nil {
-                                Color.black.opacity(0.001) // Nesten usynlig, men fanger trykk
-                                    .ignoresSafeArea()
-                                    .onTapGesture {
-                                        withAnimation { focusedField = nil }
-                                    }
-                            }
+
                 // SKUFF
                 if let target = focusedField {
                     VStack {
