@@ -18,13 +18,18 @@ struct WeldingProcess: Identifiable, Hashable {
     let defaultVoltage: String
     let defaultAmperage: String
     
-    // VI FLYTTER LISTEN HIT SÅ DEN BLIR TILGJENGELIG OVERALT:
+    // Full liste basert på ISO 17671-1
     static let allProcesses = [
-        WeldingProcess(name: "Arc energy", code: "RAW", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
-        WeldingProcess(name: "SAW (Pulver)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
-        WeldingProcess(name: "MMA (Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
-        WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
+
+        WeldingProcess(name: "Arc energy", code: "Arc", kFactor: 1.0, defaultVoltage: "14.0", defaultAmperage: "180"),
+        WeldingProcess(name: "SAW (Submerged Arc)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
+        WeldingProcess(name: "MMA (Stick/Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
+        WeldingProcess(name: "MIG (Solid tråd, inert)", code: "131", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
+        WeldingProcess(name: "MAG (Solid tråd, aktiv)", code: "135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
+        WeldingProcess(name: "FCAW (Rørtråd, gass)", code: "136", kFactor: 0.8, defaultVoltage: "26.0", defaultAmperage: "220"),
+        WeldingProcess(name: "MCAW (Metallpulver)", code: "138", kFactor: 0.8, defaultVoltage: "26.0", defaultAmperage: "220"),
+        WeldingProcess(name: "FCAW-S (Selvbeskyttende)", code: "114", kFactor: 0.8, defaultVoltage: "20.0", defaultAmperage: "180"),
+        WeldingProcess(name: "TIG (Tungsten)", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
         WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
     ]
 }
@@ -47,6 +52,8 @@ struct HeatInputView: View {
     @Query(sort: \WeldGroup.date, order: .reverse) private var jobHistory: [WeldGroup]
     
     // STORAGE
+    @AppStorage("show_extended_data") private var showExtendedData: Bool = false
+        @State private var showExtendedDataSheet = false // Styrer visning av data-skjerm
     @AppStorage("heat_selected_process_name") private var selectedProcessName: String = "Arc energy"
     @AppStorage("heat_voltage") private var voltageStr: String = ""
     @AppStorage("heat_amperage") private var amperageStr: String = ""
@@ -134,7 +141,7 @@ struct HeatInputView: View {
                                 HStack(alignment: .top, spacing: 0) {
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
+                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "ARC" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
                                             .frame(maxWidth: .infinity)
                                     }
                                     Spacer(minLength: 20)
@@ -166,7 +173,7 @@ struct HeatInputView: View {
                             } else {
                                 VStack(spacing: 15) {
                                     HStack(alignment: .center, spacing: 8) {
-                                        if currentProcess.code != "RAW" {
+                                        if currentProcess.code != "Arc" {
                                             VStack(spacing: 0) {
                                                 Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                                                 Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
@@ -209,14 +216,57 @@ struct HeatInputView: View {
                         // --- GRUPPE 3: BUNNEN (Deaktiveres når skuffen er åpen) ---
                         Group {
                             HStack(spacing: 15) {
+                                // 1. NEW JOB BUTTON (Venstre)
                                 Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) {
-                                    VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                    VStack(spacing: 2) {
+                                        Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold))
+                                        Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8))
+                                    }
+                                    .foregroundColor(RetroTheme.primary)
+                                    .frame(width: 80, height: 50)
+                                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                                 }
+                                .disabled(isNamingJob).allowsHitTesting(focusedField == nil).opacity((isNamingJob || focusedField != nil) ? 0.3 : 1.0)
                                 
+                                // 2. LOG PASS BUTTON (Midten - fyller plassen)
                                 Button(action: logPass) {
-                                    HStack { Text("LOG PASS #\(passCounter)").font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
+                                    HStack {
+                                        Text("LOG PASS #\(passCounter)").font(RetroTheme.font(size: 20, weight: .heavy))
+                                            .lineLimit(1)            // <--- NY: Tvinger teksten til én linje
+                                            .truncationMode(.middle)
+                                        Spacer()
+                                        Image(systemName: "arrow.right.to.line")
+                                    }
+                                    .padding()
+                                    .foregroundColor(.black)
+                                    .background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
                                 }
+                                .disabled(heatInput == 0 || isNamingJob || focusedField != nil)
+                                .opacity(focusedField != nil ? 0.6 : 1.0)
                                 .disabled(heatInput == 0 || isNamingJob)
+                                
+                                // 3. EXTENDED DATA BUTTON (Høyre - VISES KUN HVIS AKTIVERT)
+                                if showExtendedData {
+                                    Button(action: {
+                                        showExtendedDataSheet = true
+                                        Haptics.selection()
+                                    }) {
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "plus")
+                                                .font(.system(size: 14, weight: .bold))
+                                            Text("DATA")
+                                                .font(RetroTheme.font(size: 10, weight: .bold))
+                                        }
+                                        .foregroundColor(RetroTheme.primary)
+                                        .frame(width: 60, height: 50)
+                                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                    }
+                                    .disabled(isNamingJob || focusedField != nil)
+                                    .opacity((isNamingJob || focusedField != nil) ? 0.3 : 1.0)
+                                    .sheet(isPresented: $showExtendedDataSheet) {
+                                            ExtendedDataView(isPresented: $showExtendedDataSheet)
+                                        }
+                                }
                             }.padding(.horizontal).padding(.top, 25)
                             
                             ScrollView {

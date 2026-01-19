@@ -145,7 +145,7 @@ struct Scanlines: View {
             // Tegn en linje hver 4. piksel (2px linje, 2px mellomrom)
             for y in stride(from: 0, to: size.height, by: 4) {
                 let rect = CGRect(x: 0, y: y, width: size.width, height: 2)
-                context.fill(Path(rect), with: .color(.black.opacity(0.15))) // Litt tydeligere scanlines (0.1 -> 0.15)
+                context.fill(Path(rect), with: .color(.black.opacity(0.05))) // Litt tydeligere scanlines (0.1 -> 0.15)
             }
         }
         // VIKTIG OPTIMALISERING: Cacher tegningen som et bilde på GPU.

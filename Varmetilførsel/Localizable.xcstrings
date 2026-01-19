@@ -4,16 +4,13 @@
     "" : {
 
     },
-    "[ ]" : {
-
-    },
     "[%@]" : {
 
     },
-    "[X]" : {
+    "/" : {
 
     },
-    "/" : {
+    "%lld active processes selected" : {
 
     },
     "%lld passes" : {
@@ -23,6 +20,7 @@
 
     },
     "© %@ Frode Halrynjo. Med enerett." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -38,6 +36,9 @@
         }
       }
     },
+    "© %lld Frode Halrynjo. Med enerett." : {
+
+    },
     "×" : {
 
     },
@@ -51,6 +52,9 @@
 
     },
     "▼" : {
+
+    },
+    "0.0" : {
 
     },
     "3" : {
@@ -91,6 +95,9 @@
         }
       }
     },
+    "CLOSE" : {
+
+    },
     "CONFIGURATION" : {
       "localizations" : {
         "nb" : {
@@ -100,6 +107,12 @@
           }
         }
       }
+    },
+    "CONFIGURE PROCESS LIST" : {
+
+    },
+    "CONFIGURE PROCESSES" : {
+
     },
     "CURRENT PASS (kJ/mm)" : {
       "localizations" : {
@@ -111,7 +124,16 @@
         }
       }
     },
+    "Customize the list of available processes." : {
+
+    },
+    "DATA" : {
+
+    },
     "EXPORT" : {
+
+    },
+    "EXTENDED DATA BUTTON" : {
 
     },
     "FINISH" : {
@@ -133,6 +155,12 @@
           }
         }
       }
+    },
+    "ISO 4063: %@" : {
+
+    },
+    "ISO 15609-1 DATA" : {
+
     },
     "ISO 17671" : {
 
@@ -238,9 +266,6 @@
         }
       }
     },
-    "Select which processes to show in the calculator." : {
-
-    },
     "Speed: %@ mm/min" : {
 
     },
@@ -256,6 +281,9 @@
           }
         }
       }
+    },
+    "Type details here..." : {
+
     },
     "Varmetilførsel v1.0" : {
 

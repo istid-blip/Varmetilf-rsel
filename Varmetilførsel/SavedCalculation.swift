@@ -33,35 +33,40 @@ class WeldGroup {
     }
 }
 
+import SwiftData
+import Foundation
+
 @Model
-class SavedCalculation {
+final class SavedCalculation {
     var id: UUID
-    var name: String // F.eks "Pass #1"
+    var name: String
     var resultValue: String
-    var timestamp: Date
     var category: String
+    var date: Date
     
-    // Detaljer
-    var voltage: Double?
-    var amperage: Double?
-    var travelTime: Double?
-    var weldLength: Double?
-    var calculatedHeat: Double?
+    // Core data
+    var voltage: Double
+    var amperage: Double
+    var travelTime: Double
+    var weldLength: Double
+    var calculatedHeat: Double
     
-    // Relasjon: Hver sveis tilhører en gruppe (valgfritt i starten for bakoverkompatibilitet)
+    // NYE FELTER (ISO 15609-1 DATA)
+    var wireFeedSpeed: String?
+    var gasFlow: String?
+    var stickOut: String?
+    var interpassTemp: String?
+    var polarity: String?
+    var note: String?
+    
     var group: WeldGroup?
     
-    init(name: String, resultValue: String, category: String,
-         voltage: Double? = nil, amperage: Double? = nil,
-         travelTime: Double? = nil, weldLength: Double? = nil,
-         calculatedHeat: Double? = nil) {
-        
+    init(name: String, resultValue: String, category: String, voltage: Double, amperage: Double, travelTime: Double, weldLength: Double, calculatedHeat: Double) {
         self.id = UUID()
         self.name = name
         self.resultValue = resultValue
-        self.timestamp = Date()
         self.category = category
-        
+        self.date = Date()
         self.voltage = voltage
         self.amperage = amperage
         self.travelTime = travelTime
