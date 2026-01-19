@@ -274,4 +274,4 @@ extension View {
     func blinkEffect() -> some View {
         self.modifier(BlinkModifier())
     }
-}//
+}
