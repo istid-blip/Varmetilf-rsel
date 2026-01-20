@@ -7,14 +7,15 @@
 
 import SwiftUI
 
-// --- NY KOMPONENT: KOMPAKT BRYTER ---
-struct RetroCompactSwitch: View {
+// --- NY KOMPONENT: CHUNKY SWITCH (Større og lettere å treffe) ---
+struct RetroChunkySwitch: View {
     let leftLabel: String
     let rightLabel: String
     @Binding var isLeftSelected: Bool
     
     var body: some View {
         HStack(spacing: 0) {
+            // Venstre valg
             Button(action: {
                 if !isLeftSelected {
                     Haptics.selection()
@@ -22,16 +23,20 @@ struct RetroCompactSwitch: View {
                 }
             }) {
                 Text(leftLabel)
-                    .font(RetroTheme.font(size: 12, weight: .bold))
+                    .font(RetroTheme.font(size: 14, weight: .bold)) // Større font
                     .foregroundColor(isLeftSelected ? Color.black : RetroTheme.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .frame(height: 44) // Fast høyde for god trykkflate
+                    .padding(.horizontal, 20) // Bredere trykkflate
                     .background(isLeftSelected ? RetroTheme.primary : Color.black)
             }
             .buttonStyle(.plain)
             
-            Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 20)
+            // Skillelinje
+            Rectangle()
+                .fill(RetroTheme.primary)
+                .frame(width: 2, height: 44) // Tykkere og høyere skillelinje
             
+            // Høyre valg
             Button(action: {
                 if isLeftSelected {
                     Haptics.selection()
@@ -39,15 +44,18 @@ struct RetroCompactSwitch: View {
                 }
             }) {
                 Text(rightLabel)
-                    .font(RetroTheme.font(size: 12, weight: .bold))
+                    .font(RetroTheme.font(size: 14, weight: .bold)) // Større font
                     .foregroundColor(!isLeftSelected ? Color.black : RetroTheme.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .frame(height: 44) // Fast høyde
+                    .padding(.horizontal, 20) // Bredere trykkflate
                     .background(!isLeftSelected ? RetroTheme.primary : Color.black)
             }
             .buttonStyle(.plain)
         }
-        .overlay(RoundedRectangle(cornerRadius: 0).stroke(RetroTheme.primary, lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(RetroTheme.primary, lineWidth: 2) // Litt kraftigere ramme
+        )
     }
 }
 
@@ -63,11 +71,15 @@ struct RetroSettingRow<Content: View>: View {
     
     var body: some View {
         HStack {
-            Text(title).font(RetroTheme.font(size: 14)).foregroundColor(RetroTheme.primary)
+            Text(title)
+                .font(RetroTheme.font(size: 16, weight: .bold)) // Litt større tittel
+                .foregroundColor(RetroTheme.primary)
+            
             Spacer()
+            
             content
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 12) // Mer luft mellom radene
     }
 }
 
@@ -94,6 +106,14 @@ struct SettingsView: View {
         Binding(get: { enableHaptics }, set: { enableHaptics = $0 })
     }
     
+    // Teller for status-tekst
+    var activeCount: Int {
+        let allCount = WeldingProcess.allProcesses.count
+        let hiddenCount = hiddenProcessCodes.split(separator: ",").count
+        if hiddenProcessCodes.isEmpty { return allCount }
+        return max(0, allCount - hiddenCount)
+    }
+    
     var body: some View {
         ZStack {
             // 1. BAKGRUNN
@@ -104,54 +124,91 @@ struct SettingsView: View {
                 // HEADER
                 HStack {
                     Text("KONFIGURASJON")
-                        .font(RetroTheme.font(size: 16, weight: .heavy))
+                        .font(RetroTheme.font(size: 18, weight: .heavy))
                         .foregroundColor(RetroTheme.primary)
                     Spacer()
                     Button(action: { withAnimation(.easeInOut) { showSettings = false } }){
                         Text("TILBAKE")
                             .font(RetroTheme.font(size: 14, weight: .bold))
                             .foregroundColor(RetroTheme.primary)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10) // Større trykkflate på tilbake-knapp også
                             .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                     }
                 }
                 .padding()
+
                 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 30) {
+                    VStack(alignment: .leading, spacing: 40) { // Mer luft mellom seksjonene
                         
                         // --- GENERAL ---
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 0) {
                             SectionHeader(title: "GENERELT")
+                            
                             RetroSettingRow("Språk") {
-                                RetroCompactSwitch(leftLabel: "NO", rightLabel: "EN", isLeftSelected: isNorwegian)
+                                RetroChunkySwitch(leftLabel: "NO", rightLabel: "EN", isLeftSelected: isNorwegian)
                             }
+                            
                             DividerLine()
+                            
                             RetroSettingRow("Vibrasjon") {
-                                RetroCompactSwitch(leftLabel: "PÅ", rightLabel: "AV", isLeftSelected: isHapticsOn)
+                                RetroChunkySwitch(leftLabel: "PÅ", rightLabel: "AV", isLeftSelected: isHapticsOn)
                             }
                         }
                         
                         // --- SVEISEPROSESSER ---
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 12) {
                             SectionHeader(title: "KALKULATOR")
-                            Text("Velg hvilke sveiseprosesser som skal være synlige i kalkulatoren.")
-                                .font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim).padding(.bottom, 4)
                             
-                            Button(action: {
-                                Haptics.selection()
-                                showProcessDrawer = true // Åpner den nye skuffen
-                            }) {
-                                HStack {
-                                    Text("VELG AKTIVE PROSESSER")
-                                        .font(RetroTheme.font(size: 14, weight: .bold))
-                                    Spacer()
-                                    Image(systemName: "chevron.right").font(.system(size: 12))
+                            // NY LAYOUT: Tekst til venstre, Knapp til høyre
+                            HStack(alignment: .center, spacing: 16) {
+                                // VENSTRE SIDE: Forklaring
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("SVEISEMETODER")
+                                        .font(RetroTheme.font(size: 16, weight: .bold))
+                                        .foregroundColor(RetroTheme.primary)
+                                    
+                                    Text("Velg hvilke prosesser som skal være tilgjengelig i listen.")
+                                        .font(RetroTheme.font(size: 12))
+                                        .foregroundColor(RetroTheme.dim)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    
+                                    // Statusindikator
+                                    Text("STATUS: \(activeCount) AKTIVE")
+                                        .font(RetroTheme.font(size: 10, weight: .bold))
+                                        .foregroundColor(RetroTheme.primary)
+                                        .padding(.top, 4)
                                 }
-                                .foregroundColor(RetroTheme.primary)
-                                .padding()
-                                .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                
+                                Spacer()
+                                
+                                // HØYRE SIDE: Handlingsknapp
+                                Button(action: {
+                                    Haptics.selection()
+                                    showProcessDrawer = true
+                                }) {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "slider.horizontal.3")
+                                            .font(.system(size: 24))
+                                        Text("ENDRE")
+                                            .font(RetroTheme.font(size: 10, weight: .bold))
+                                    }
+                                    .foregroundColor(RetroTheme.primary)
+                                    .frame(width: 70, height: 60) // Stor, god firkant
+                                    .background(Color.black)
+                                    .overlay(
+                                        Rectangle().stroke(RetroTheme.primary, lineWidth: 1)
+                                    )
+                                    // Legg til en liten skygge/offset effekt for "trykkbarhet"
+                                    .shadow(color: RetroTheme.dim.opacity(0.3), radius: 0, x: 2, y: 2)
+                                }
+                                .buttonStyle(.plain)
                             }
+                            .padding(16)
+                            .overlay(
+                                Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1)
+                            )
                         }
                         
                         // --- MANUAL ---
@@ -175,72 +232,79 @@ struct SettingsView: View {
                     .padding(24)
                 }
             }
-            .opacity(showProcessDrawer ? 0.3 : 1.0) // Dimmer bakgrunnen
-            .disabled(showProcessDrawer) // Hindrer trykk
+            .opacity(showProcessDrawer ? 0.3 : 1.0)
+            .disabled(showProcessDrawer)
             
-            // 3. SKUFFEN (Den nye Unified Drawer)
-            RetroModalDrawer(
-                isPresented: $showProcessDrawer,
-                title: "AKTIVE PROSESSER",
-                fromTop: false // Kommer fra bunnen, sett true for topp
-            ) {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(WeldingProcess.allProcesses, id: \.self) { process in
-                            let isHidden = hiddenProcessCodes.contains(process.code)
-                            let isLocked = process.code == "RAW"
-                            let isChecked = !isHidden
-                            
-                            Button(action: {
-                                if !isLocked {
-                                    Haptics.selection()
-                                    toggleProcess(process.code)
-                                }
-                            }) {
-                                HStack {
-                                    Text(process.name)
-                                        .font(RetroTheme.font(size: 14))
-                                        .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
-                                    
-                                    Spacer()
-                                    
-                                    if isLocked {
-                                        Image(systemName: "lock.fill")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(RetroTheme.dim)
-                                            .padding(.trailing, 8)
-                                    }
-                                    
-                                    Text(process.code)
-                                        .font(RetroTheme.font(size: 10))
-                                        .foregroundColor(RetroTheme.dim)
-                                        .padding(.trailing, 8)
-                                    
-                                    // Retro Checkbox Square
-                                    ZStack {
-                                        if isChecked {
-                                            Rectangle().fill(RetroTheme.primary).frame(width: 8, height: 8)
+            // 3. SKUFFEN (Unified Drawer)
+                        RetroModalDrawer(
+                            isPresented: $showProcessDrawer,
+                            title: "AKTIVE PROSESSER",
+                            fromTop: false
+                        ) {
+                            ScrollView {
+                                VStack(spacing: 0) {
+                                    ForEach(WeldingProcess.allProcesses, id: \.self) { process in
+                                        let isHidden = hiddenProcessCodes.contains(process.code)
+                                        // Merk: Sjekk om din modell bruker "RAW", "Arc" eller "ARC" for energiberegning
+                                        // Hvis du er usikker, kan du sjekke om koden er lik 111, 136 osv.
+                                        // Her antar jeg "RAW" basert på tidligere info.
+                                        let isLocked = process.code == "RAW"
+                                        let isChecked = !isHidden
+                                        
+                                        Button(action: {
+                                            if !isLocked {
+                                                Haptics.selection()
+                                                toggleProcess(process.code)
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text(process.name)
+                                                    .font(RetroTheme.font(size: 14))
+                                                    .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
+                                                
+                                                Spacer()
+                                                
+                                                if isLocked {
+                                                    Image(systemName: "lock.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(RetroTheme.dim)
+                                                        .padding(.trailing, 8)
+                                                }
+                                                
+                                                Text(process.code)
+                                                    .font(RetroTheme.font(size: 10))
+                                                    .foregroundColor(RetroTheme.dim)
+                                                    .padding(.trailing, 8)
+                                                
+                                                // Retro Checkbox Square
+                                                ZStack {
+                                                    if isChecked {
+                                                        Rectangle().fill(RetroTheme.primary).frame(width: 8, height: 8)
+                                                    }
+                                                }
+                                                .frame(width: 16, height: 16)
+                                                .overlay(Rectangle().stroke(isChecked ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1))
+                                            }
+                                            .padding(.vertical, 16) // Økt høyde for bedre treffsikkerhet
+                                            .padding(.horizontal, 16) // Litt luft på sidene
+                                            .background(isChecked ? RetroTheme.primary.opacity(0.05) : Color.black) // Color.black sikrer også treff
+                                            .contentShape(Rectangle()) // <--- DETTE ER FIXEN: Gjør hele flaten klikkbar
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(isLocked)
+                                        
+                                        // Skillelinje
+                                        if process != WeldingProcess.allProcesses.last {
+                                            Rectangle()
+                                                .fill(RetroTheme.dim.opacity(0.2))
+                                                .frame(height: 1)
+                                                .padding(.horizontal, 16)
                                         }
                                     }
-                                    .frame(width: 16, height: 16)
-                                    .overlay(Rectangle().stroke(isChecked ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1))
                                 }
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 8)
-                                .background(isChecked ? RetroTheme.primary.opacity(0.05) : Color.clear)
                             }
-                            .buttonStyle(.plain)
-                            .disabled(isLocked)
-                            
-                            // Tynn linje
-                            if process != WeldingProcess.allProcesses.last {
-                                Rectangle().fill(RetroTheme.dim.opacity(0.2)).frame(height: 1)
-                            }
+                            .frame(maxHeight: 350)
                         }
-                    }
-                }
-                .frame(maxHeight: 350) // Begrenser høyden inni boksen
-            }
         }
         .crtScreen()
     }
@@ -260,12 +324,13 @@ struct SettingsView: View {
         Text(title)
             .font(RetroTheme.font(size: 12))
             .foregroundColor(RetroTheme.dim)
-            .padding(.bottom, 2)
+            .padding(.bottom, 4)
     }
     
     private func DividerLine() -> some View {
         Rectangle()
             .fill(RetroTheme.dim.opacity(0.2))
             .frame(height: 1)
+            .padding(.vertical, 4)
     }
 }

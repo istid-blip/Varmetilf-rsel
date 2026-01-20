@@ -108,6 +108,9 @@
         }
       }
     },
+    "ENDRE" : {
+
+    },
     "EXPORT" : {
 
     },
@@ -255,6 +258,12 @@
     "START" : {
 
     },
+    "STATUS: %lld AKTIVE" : {
+
+    },
+    "SVEISEMETODER" : {
+
+    },
     "TILBAKE" : {
 
     },
@@ -271,10 +280,7 @@
     "Varmetilførsel v1.0" : {
 
     },
-    "VELG AKTIVE PROSESSER" : {
-
-    },
-    "Velg hvilke sveiseprosesser som skal være synlige i kalkulatoren." : {
+    "Velg hvilke prosesser som skal være tilgjengelig i listen." : {
 
     },
     "Vibrasjon" : {
