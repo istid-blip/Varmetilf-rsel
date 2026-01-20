@@ -4,13 +4,7 @@
     "" : {
 
     },
-    "[ ]" : {
-
-    },
     "[%@]" : {
-
-    },
-    "[X]" : {
 
     },
     "/" : {
@@ -22,7 +16,11 @@
     "• ACTIVE JOB" : {
 
     },
+    "© %@ Frode Halrynjo" : {
+
+    },
     "© %@ Frode Halrynjo. Med enerett." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -62,13 +60,14 @@
     "ACTIVE JOB" : {
 
     },
-    "ACTIVE WELDING PROCESSES" : {
+    "AKTIVE PROSESSER" : {
 
     },
     "AVG: %@ kJ/mm" : {
 
     },
     "BACK" : {
+      "extractionState" : "stale",
       "localizations" : {
         "nb" : {
           "stringUnit" : {
@@ -92,6 +91,7 @@
       }
     },
     "CONFIGURATION" : {
+      "extractionState" : "stale",
       "localizations" : {
         "nb" : {
           "stringUnit" : {
@@ -149,7 +149,18 @@
     "k-factor" : {
 
     },
+    "KONFIGURASJON" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kong"
+          }
+        }
+      }
+    },
     "LANGUAGE" : {
+      "extractionState" : "stale",
       "localizations" : {
         "nb" : {
           "stringUnit" : {
@@ -238,13 +249,16 @@
         }
       }
     },
-    "Select which processes to show in the calculator." : {
-
-    },
     "Speed: %@ mm/min" : {
 
     },
+    "Språk" : {
+
+    },
     "START" : {
+
+    },
+    "TILBAKE" : {
 
     },
     "TIMER READY" : {
@@ -260,7 +274,17 @@
     "Varmetilførsel v1.0" : {
 
     },
+    "VELG AKTIVE PROSESSER" : {
+
+    },
+    "Velg hvilke sveiseprosesser som skal være synlige i kalkulatoren." : {
+
+    },
+    "Vibrasjon" : {
+
+    },
     "VIBRATION FEEDBACK" : {
+      "extractionState" : "stale",
       "localizations" : {
         "nb" : {
           "stringUnit" : {
