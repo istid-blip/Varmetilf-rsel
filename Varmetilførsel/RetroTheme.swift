@@ -69,46 +69,63 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
         .overlay(
             GeometryReader { geo in
                 if isExpanded {
-                    VStack(spacing: 0) {
-                        ForEach(options) { option in
-                            Button(action: {
-                                onSelect(option)
+                    ZStack(alignment: .top) { // <--- 1. Bruk ZStack for å legge lag oppå hverandre
+                        
+                        // 2. DEN USYNLIGE VEGGEN (KLIKK-FANGER)
+                        // Dette laget dekker hele skjermen (og vel så det)
+                        Color.black.opacity(0.001)
+                            .frame(width: 4000, height: 4000) // En enorm ramme som garantert dekker alt
+                            .contentShape(Rectangle())
+                            .position(x: geo.size.width / 2, y: geo.size.height / 2) // Sentrerer den enorme flaten over knappen
+                            .onTapGesture {
+                                // Når man trykker på "ingenting", lukk menyen
                                 withAnimation(.easeInOut(duration: 0.15)) {
                                     isExpanded = false
                                 }
-                            }) {
-                                HStack {
-                                    Text(itemText(option))
-                                        .font(RetroTheme.font(size: 14))
-                                        .foregroundColor(option == selection ? Color.black : RetroTheme.primary)
-                                    
-                                    Spacer()
-                                    
-                                    if let detail = itemDetail?(option) {
-                                        Text(detail)
-                                            .font(RetroTheme.font(size: 10))
-                                            .foregroundColor(option == selection ? Color.black.opacity(0.8) : RetroTheme.dim)
-                                    }
-                                }
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 10)
-                                .background(option == selection ? RetroTheme.primary : Color.black)
                             }
-                            .overlay(
-                                Rectangle().frame(height: 1).foregroundColor(RetroTheme.dim.opacity(0.3)),
-                                alignment: .bottom
-                            )
+
+                        // 3. SELVE MENYEN (Din originale kode)
+                        VStack(spacing: 0) {
+                            ForEach(options) { option in
+                                Button(action: {
+                                    onSelect(option)
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        isExpanded = false
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(itemText(option))
+                                            .font(RetroTheme.font(size: 14))
+                                            .foregroundColor(option == selection ? Color.black : RetroTheme.primary)
+                                        
+                                        Spacer()
+                                        
+                                        if let detail = itemDetail?(option) {
+                                            Text(detail)
+                                                .font(RetroTheme.font(size: 10))
+                                                .foregroundColor(option == selection ? Color.black.opacity(0.8) : RetroTheme.dim)
+                                        }
+                                    }
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 10)
+                                    .background(option == selection ? RetroTheme.primary : Color.black)
+                                }
+                                .overlay(
+                                    Rectangle().frame(height: 1).foregroundColor(RetroTheme.dim.opacity(0.3)),
+                                    alignment: .bottom
+                                )
+                            }
                         }
+                        .background(Color.black)
+                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
+                        .frame(width: geo.size.width) // Beholder knappens bredde
+                        .offset(y: geo.size.height + 5) // Flytter menyen ned under knappen
+                        .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 10)
                     }
-                    .background(Color.black)
-                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
-                    .frame(width: geo.size.width)
-                    .offset(y: geo.size.height + 5)
-                    .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 10)
                 }
             }
         )
-        .zIndex(isExpanded ? 100 : 1)
+        // .zIndex(isExpanded ? 100 : 1) <--- Husk å beholde denne som den er på slutten!
     }
 } //Retrodropdown kan kanskje trimmes
 
@@ -145,7 +162,7 @@ struct Scanlines: View {
             // Tegn en linje hver 4. piksel (2px linje, 2px mellomrom)
             for y in stride(from: 0, to: size.height, by: 4) {
                 let rect = CGRect(x: 0, y: y, width: size.width, height: 2)
-                context.fill(Path(rect), with: .color(.black.opacity(0.15))) // Litt tydeligere scanlines (0.1 -> 0.15)
+                context.fill(Path(rect), with: .color(.black.opacity(0.05)))
             }
         }
         // VIKTIG OPTIMALISERING: Cacher tegningen som et bilde på GPU.
