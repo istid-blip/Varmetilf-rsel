@@ -10,23 +10,142 @@ import SwiftData
 import Combine
 
 // --- 1. SVEISEPROSESS MODELL ---
+
 struct WeldingProcess: Identifiable, Hashable {
     let id = UUID()
     let name: String
-    let code: String
+    let code: String       // ISO Code (European)
+    let awsCode: String    // AWS Abbreviation (American)
     let kFactor: Double
     let defaultVoltage: String
     let defaultAmperage: String
     
-    // VI FLYTTER LISTEN HIT SÅ DEN BLIR TILGJENGELIG OVERALT:
-    static let allProcesses = [
-        WeldingProcess(name: "Arc energy", code: "RAW", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
-        WeldingProcess(name: "SAW (Pulver)", code: "121", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
-        WeldingProcess(name: "MMA (Pinne)", code: "111", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
-        WeldingProcess(name: "MIG / MAG", code: "131/135", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "TIG", code: "141", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
-        WeldingProcess(name: "Plasma", code: "15", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
+    // Oppdatert liste med ISO og AWS
+    static let allProcesses: [WeldingProcess] = [
+        
+        // --- 1. Arc Energy ---
+        WeldingProcess(
+            name: "Arc energy",
+            code: "Arc",
+            awsCode: "-",
+            kFactor: 1.0,
+            defaultVoltage: "0.0",
+            defaultAmperage: "0"
+        ),
+        
+        // --- 2. SAW ---
+        WeldingProcess(
+            name: "Submerged arc welding",
+            code: "121",
+            awsCode: "SAW",
+            kFactor: 1.0,
+            defaultVoltage: "30.0",
+            defaultAmperage: "500"
+        ),
+        
+        // --- 3. MMA ---
+        WeldingProcess(
+            name: "MMA / Covered electrode",
+            code: "111",
+            awsCode: "SMAW",
+            kFactor: 0.8,
+            defaultVoltage: "23.0",
+            defaultAmperage: "120"
+        ),
+        
+        // --- 4. MIG/MAG Series ---
+        WeldingProcess(
+            name: "MIG welding",
+            code: "131",
+            awsCode: "GMAW",
+            kFactor: 0.8,
+            defaultVoltage: "24.0",
+            defaultAmperage: "200"
+        ),
+        
+        WeldingProcess(
+            name: "MAG welding",
+            code: "135",
+            awsCode: "GMAW",
+            kFactor: 0.8,
+            defaultVoltage: "24.0",
+            defaultAmperage: "200"
+        ),
+        
+        // --- 5. Flux/Metal Cored Series ---
+        WeldingProcess(
+            name: "FCAW No Gas",
+            code: "114",
+            awsCode: "FCAW-S",
+            kFactor: 0.8,
+            defaultVoltage: "24.0",
+            defaultAmperage: "180"
+        ),
+        
+        WeldingProcess(
+            name: "FCAW Active Gas",
+            code: "136",
+            awsCode: "FCAW-G",
+            kFactor: 0.8,
+            defaultVoltage: "25.0",
+            defaultAmperage: "220"
+        ),
+        
+        WeldingProcess(
+            name: "FCAW Inert Gas",
+            code: "137",
+            awsCode: "FCAW-G",
+            kFactor: 0.8,
+            defaultVoltage: "25.0",
+            defaultAmperage: "220"
+        ),
+        
+        WeldingProcess(
+            name: "MCAW Active Gas",
+            code: "138",
+            awsCode: "GMAW-C",
+            kFactor: 0.8,
+            defaultVoltage: "25.0",
+            defaultAmperage: "240"
+        ),
+        
+        WeldingProcess(
+            name: "MCAW Inert Gas",
+            code: "139",
+            awsCode: "GMAW-C",
+            kFactor: 0.8,
+            defaultVoltage: "25.0",
+            defaultAmperage: "240"
+        ),
+        
+        // --- 6. TIG ---
+        WeldingProcess(
+            name: "TIG welding",
+            code: "141",
+            awsCode: "GTAW",
+            kFactor: 0.6,
+            defaultVoltage: "14.0",
+            defaultAmperage: "110"
+        ),
+        
+        // --- 7. Plasma ---
+        WeldingProcess(
+            name: "Plasma arc welding",
+            code: "15",
+            awsCode: "PAW",
+            kFactor: 0.6,
+            defaultVoltage: "25.0",
+            defaultAmperage: "150"
+        )
     ]
+}
+
+// Hjelpefunksjon for tall-formatering
+func formatNumber(_ value: Double, decimals: Int = 1) -> String {
+    let formatter = NumberFormatter()
+    formatter.minimumFractionDigits = 0
+    formatter.maximumFractionDigits = decimals
+    return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(decimals)f", value)
 }
 
 // --- 2. HOVEDVISNING ---
@@ -134,7 +253,7 @@ struct HeatInputView: View {
                                 HStack(alignment: .top, spacing: 0) {
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "RAW" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
+                                        RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "Arc" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
                                             .frame(maxWidth: .infinity)
                                     }
                                     Spacer(minLength: 20)
@@ -166,7 +285,7 @@ struct HeatInputView: View {
                             } else {
                                 VStack(spacing: 15) {
                                     HStack(alignment: .center, spacing: 8) {
-                                        if currentProcess.code != "RAW" {
+                                        if currentProcess.code != "Arc" {
                                             VStack(spacing: 0) {
                                                 Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                                                 Text(String(format: "%.1f", efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)

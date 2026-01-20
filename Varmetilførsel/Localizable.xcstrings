@@ -4,6 +4,9 @@
     "" : {
 
     },
+    " • AWS: %@" : {
+
+    },
     "[%@]" : {
 
     },
@@ -137,6 +140,9 @@
     "ISO 17671" : {
 
     },
+    "ISO: %@" : {
+
+    },
     "JOB METADATA" : {
 
     },
@@ -147,6 +153,9 @@
 
     },
     "k-factor" : {
+
+    },
+    "k=%.1f" : {
 
     },
     "KONFIGURASJON" : {
@@ -280,7 +289,7 @@
     "Varmetilførsel v1.0" : {
 
     },
-    "Velg hvilke prosesser som skal være tilgjengelig i listen." : {
+    "Velg prosesser, k-faktor og standarder (ISO/AWS)." : {
 
     },
     "Vibrasjon" : {
