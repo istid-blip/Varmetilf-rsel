@@ -266,7 +266,7 @@ struct HeatInputView: View {
                             }
                         }
                         .disabled(focusedField != nil) // <--- MAGIEN: Gjør at trykk her "faller gjennom" til bakgrunnen som lukker skuffen
-                        .zIndex(10)
+                        //.zIndex(10)
                         
                         
                         // --- GRUPPE 2: INPUT BOKS (UNNTAKET - Alltid aktiv!) ---
@@ -390,7 +390,13 @@ struct HeatInputView: View {
         .onReceive(uiUpdateTimer) { _ in
             if isTimerRunning {
                 let total = timerAccumulatedTime + (Date().timeIntervalSince1970 - timerStartTimestamp)
-                timeStr = String(format: "%.0f", total)
+                if total >= 999 {
+                            timeStr = "999"
+                            isTimerRunning = false // Stopper timeren automatisk
+                            Haptics.play(.heavy)   // Gir et kraftig signal om at den har stoppet
+                } else {
+                    timeStr = String(format: "%.0f", total)
+                }
             }
         }
     }
@@ -479,7 +485,7 @@ struct UnifiedInputDrawer: View {
                             
                             VStack(spacing: 2) {
                                 if isRecording {
-                                    Text(String(format: "%02d", Int(value)))
+                                    Text(String(format: "%02d", Int(min(value, 999))))
                                         .font(.system(size: 50, weight: .black, design: .monospaced))
                                         .foregroundColor(.white)
                                         .contentTransition(.numericText(value: value))
@@ -549,9 +555,25 @@ struct UnifiedInputDrawer: View {
                     let steps = Int(dragOffset / 12)
                     if steps != 0 {
                         let newValue = value - Double(steps) * step * (abs(delta) > 10 ? 5.0 : 1.0)
-                        if range.contains(newValue) {
-                            value = (newValue * 100).rounded() / 100
-                            Haptics.selection()
+                        if target == .time && newValue > 999 {
+                                    if value < 999 {
+                                        value = 999
+                                        Haptics.play(.heavy) // Kraftig støt når vi treffer taket
+                                    } else {
+                                        // Allerede på 999, gi en liten "feil" haptikk hvis man prøver mer
+                                        let generator = UINotificationFeedbackGenerator()
+                                        generator.notificationOccurred(.warning)
+                                    }
+                                } else if range.contains(newValue) {
+                                    // Normal rulling innenfor tillatt range
+                                    value = (newValue * 100).rounded() / 100
+                                    Haptics.selection()
+                                } else {
+                                    // Hvis vi treffer bunnen (0)
+                                    if value > range.lowerBound {
+                                        value = range.lowerBound
+                                        Haptics.play(.heavy)
+                                    }
                         }
                         dragOffset -= Double(steps) * 12
                     }
