@@ -292,3 +292,71 @@ extension View {
         self.modifier(BlinkModifier())
     }
 }
+struct RetroModalDrawer<Content: View>: View {
+    @Binding var isPresented: Bool
+    let title: String
+    var fromTop: Bool = false // Sett til true hvis du vil den skal komme ned fra toppen (f.eks. ved tastaturbruk)
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        ZStack(alignment: fromTop ? .top : .bottom) {
+            
+            // 1. BAKGRUNN (Klikk-fanger)
+            if isPresented {
+                Color.black.opacity(0.001)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isPresented = false
+                        }
+                    }
+            }
+            
+            // 2. SELVE SKUFFEN (Unified Drawer Style)
+            if isPresented {
+                VStack(spacing: 0) {
+                    // HEADER
+                    HStack {
+                        Text(title)
+                            .font(RetroTheme.font(size: 12, weight: .bold))
+                            .foregroundColor(RetroTheme.dim)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isPresented = false
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(RetroTheme.primary)
+                                .padding(8)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(RetroTheme.dim, lineWidth: 1))
+                        }
+                    }
+                    .padding(16)
+                    
+                    // INNHOLD
+                    content
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
+                .frame(width: 320) // Samme bredde som Timer/Input-modulene
+                .background(Color.black)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(RetroTheme.dim, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
+                .padding(fromTop ? .top : .bottom, 50) // Luft fra kanten
+                .transition(.move(edge: fromTop ? .top : .bottom).combined(with: .opacity))
+                .zIndex(100)
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
+    }
+}
