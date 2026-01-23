@@ -266,7 +266,7 @@ struct HeatInputView: View {
                             }
                         }
                         .disabled(focusedField != nil) // <--- MAGIEN: Gjør at trykk her "faller gjennom" til bakgrunnen som lukker skuffen
-                        //.zIndex(10)
+                        .zIndex(100)
                         
                         
                         // --- GRUPPE 2: INPUT BOKS (UNNTAKET - Alltid aktiv!) ---
