@@ -335,7 +335,7 @@ struct HeatInputView: View {
                         .transition(.move(edge: .leading))
                         .zIndex(3)
                 }
-
+                
                 // DATA+ DRAWER
                 RetroModalDrawer(isPresented: $showExtendedDrawer, title: "DATA +", fromTop: true) {
                     ExtendedInputView(
@@ -356,7 +356,7 @@ struct HeatInputView: View {
                         Spacer()
                         UnifiedInputDrawer(target: target, value: binding(for: target), range: range(for: target), step: step(for: target), isRecording: $isTimerRunning, onReset: resetStopwatch, onToggle: toggleStopwatch, onSync: { newValue in timerAccumulatedTime = newValue }).padding(.bottom, 50)
                     }.id("DrawerContainer").transition(.move(edge: .bottom))
-                    .zIndex(300)
+                        .zIndex(300)
                 }
             }
         }
@@ -373,9 +373,17 @@ struct HeatInputView: View {
                     Haptics.play(.heavy)
                 } else {
                     timeStr = String(format: "%.0f", total)
+                    
                 }
             }
         }
+        .onChange(of: enableExtendedData) { _, newValue in
+                    if !newValue {
+                        withAnimation {
+                            extIsArcEnergy = false
+                        }
+                    }
+                }
     }
     
     // --- HJELPEFUNKSJONER --- (Uendret)
@@ -452,7 +460,14 @@ struct HeatInputView: View {
         }
     }
     
-    func selectProcess(_ p: WeldingProcess) { selectedProcessName = p.name; efficiency = p.kFactor; voltageStr = p.defaultVoltage; amperageStr = p.defaultAmperage; Haptics.selection() }
+    func selectProcess(_ p: WeldingProcess) { selectedProcessName = p.name; efficiency = p.kFactor; voltageStr = p.defaultVoltage; amperageStr = p.defaultAmperage; Haptics.selection()
+        if p.code == "Arc" {
+            extIsArcEnergy = true
+        } else {
+            extIsArcEnergy = false
+        }
+        Haptics.selection()
+    }
     func restoreActiveJob() { if let id = activeJobID, let j = jobHistory.first(where: { $0.id == id }) { currentJobName = j.name; passCounter = j.passes.count + 1 } else { activeJobID = nil; passCounter = 1 } }
     
     func startNewSession() {
