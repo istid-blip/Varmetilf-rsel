@@ -8,21 +8,21 @@
 import Foundation
 import SwiftData
 
+// --- 1. SVEISEJOBB (GRUPPE) ---
 @Model
-class WeldGroup {
+final class WeldGroup {
     var id: UUID
     var name: String
     var date: Date
     var notes: String = ""
     
-    // Ekstra info du kanskje vil manipulere senere
+    // Metadata
     var wpqrNumber: String = ""
     var baseMaterial: String = ""
     var preheatTemp: String = ""
     var interpassTemp: String = ""
     
-    // Relasjon: En jobb har mange sveiser (passes)
-    // .cascade betyr: Sletter du jobben, slettes også sveisene i den.
+    // Relasjon: En jobb har mange sveiser
     @Relationship(deleteRule: .cascade, inverse: \SavedCalculation.group)
     var passes: [SavedCalculation] = []
     
@@ -33,39 +33,68 @@ class WeldGroup {
     }
 }
 
+// --- 2. ENKELT SVEISESTRENG (BEREGNING) ---
 @Model
-class SavedCalculation {
+final class SavedCalculation {
     var id: UUID
-    var name: String // F.eks "Pass #1"
-    var resultValue: String
+    var name: String        // F.eks "Pass #1"
     var timestamp: Date
-    var category: String
     
-    // Detaljer
+    // --- Kjerne Data ---
     var voltage: Double?
     var amperage: Double?
     var travelTime: Double?
     var weldLength: Double?
-    var calculatedHeat: Double?
+    var heatInput: Double   // Resultatet (kJ/mm)
     
-    // Relasjon: Hver sveis tilhører en gruppe (valgfritt i starten for bakoverkompatibilitet)
+    // --- Prosess Data ---
+    var processName: String
+    var kFactorUsed: Double
+    
+    // --- Utvidet Data (Ny funksjonalitet) ---
+    var fillerDiameter: Double? // mm
+    var polarity: String?       // DC+, DC-, AC
+    var wireFeedSpeed: Double?  // m/min
+    var isArcEnergy: Bool = false  // false = Heat Input, true = Arc Energy
+    
+    // Relasjon til jobben
     var group: WeldGroup?
     
-    init(name: String, resultValue: String, category: String,
-         voltage: Double? = nil, amperage: Double? = nil,
-         travelTime: Double? = nil, weldLength: Double? = nil,
-         calculatedHeat: Double? = nil) {
+    init(name: String,
+         voltage: Double? = nil,
+         amperage: Double? = nil,
+         travelTime: Double? = nil,
+         weldLength: Double? = nil,
+         heatInput: Double,
+         processName: String,
+         kFactorUsed: Double,
+         fillerDiameter: Double? = nil,
+         polarity: String? = nil,
+         wireFeedSpeed: Double? = nil,
+         isArcEnergy: Bool = false) {
         
         self.id = UUID()
         self.name = name
-        self.resultValue = resultValue
         self.timestamp = Date()
-        self.category = category
         
         self.voltage = voltage
         self.amperage = amperage
         self.travelTime = travelTime
         self.weldLength = weldLength
-        self.calculatedHeat = calculatedHeat
+        self.heatInput = heatInput
+        
+        self.processName = processName
+        self.kFactorUsed = kFactorUsed
+        
+        self.fillerDiameter = fillerDiameter
+        self.polarity = polarity
+        self.wireFeedSpeed = wireFeedSpeed
+        self.isArcEnergy = isArcEnergy
+    }
+    
+    // Hjelpe-variabel for visning i lister (Compute property)
+    var resultValue: String {
+        let value = String(format: "%.2f kJ/mm", heatInput)
+        return isArcEnergy ? "\(value) (AE)" : value
     }
 }

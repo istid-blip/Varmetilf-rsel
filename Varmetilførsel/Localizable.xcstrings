@@ -7,6 +7,15 @@
     " • AWS: %@" : {
 
     },
+    "(ISO/AWS)" : {
+
+    },
+    "(k=%@)" : {
+
+    },
+    "(NO k-FACTOR)" : {
+
+    },
     "[%@]" : {
 
     },
@@ -47,6 +56,9 @@
 
     },
     "ACTIVE JOB" : {
+
+    },
+    "ARC ENERGY" : {
 
     },
     "AVG: %@ kJ/mm" : {
@@ -134,6 +146,12 @@
     "KALKULATOR" : {
 
     },
+    "kJ/mm" : {
+
+    },
+    "kJ/mm (AE)" : {
+
+    },
     "KONFIGURASJON" : {
       "localizations" : {
         "nb" : {
@@ -160,6 +178,9 @@
     "LUKK" : {
 
     },
+    "mm/min" : {
+
+    },
     "NEW JOB" : {
       "localizations" : {
         "nb" : {
@@ -169,6 +190,9 @@
           }
         }
       }
+    },
+    "No k-factor" : {
+
     },
     "NO PASSES RECORDED" : {
       "localizations" : {
@@ -180,6 +204,9 @@
         }
       }
     },
+    "POLARITET" : {
+
+    },
     "PROCESS" : {
       "localizations" : {
         "nb" : {
@@ -189,6 +216,9 @@
           }
         }
       }
+    },
+    "PROSESS" : {
+
     },
     "RECORDING..." : {
       "localizations" : {
@@ -257,6 +287,9 @@
           }
         }
       }
+    },
+    "TRAVEL SPEED" : {
+
     },
     "UTVIDET DATA" : {
       "localizations" : {
