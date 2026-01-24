@@ -166,6 +166,7 @@ struct HeatInputView: View {
     @Query(sort: \WeldGroup.date, order: .reverse) private var jobHistory: [WeldGroup]
     
     // STORAGE
+    @AppStorage("enableExtendedData") private var enableExtendedData = false
     @AppStorage("heat_selected_process_name") private var selectedProcessName: String = "Arc energy"
     @AppStorage("heat_voltage") private var voltageStr: String = ""
     @AppStorage("heat_amperage") private var amperageStr: String = ""
@@ -328,14 +329,71 @@ struct HeatInputView: View {
                         // --- GRUPPE 3: BUNNEN (Deaktiveres når skuffen er åpen) ---
                         Group {
                             HStack(spacing: 15) {
-                                Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) {
-                                    VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                // KNAPP 1: NEW JOB (Uendret)
+                                Button(action: {
+                                    if activeJobID != nil {
+                                        tempJobName = currentJobName
+                                        withAnimation {
+                                            isNamingJob = true
+                                            isJobNameFocused = true
+                                        }
+                                    } else {
+                                        startNewSession()
+                                    }
+                                }) {
+                                    VStack(spacing: 2) {
+                                        Text("NEW JOB")
+                                            .font(RetroTheme.font(size: 12, weight: .bold))
+                                        Text(activeJobID != nil ? "FINISH" : "RESET")
+                                            .font(RetroTheme.font(size: 8))
+                                    }
+                                    .foregroundColor(RetroTheme.primary)
+                                    .frame(width: 80, height: 50)
+                                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                                 }
                                 
+                                // KNAPP 2: LOG PASS (Endret for layout-prioritering)
                                 Button(action: logPass) {
-                                    HStack { Text("LOG PASS #\(passCounter)").font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
+                                    HStack {
+                                        // Vi deler teksten i to. "LOG PASS" får lov å krympe/forsvinne, mens nummeret består.
+                                        HStack(spacing: 4) {
+                                            Text("LOG PASS")
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8) // Kan krympe litt før den kuttes
+                                                .layoutPriority(0)       // Lav prioritet: denne ofres først
+                                            
+                                            Text("#\(passCounter)")
+                                                .layoutPriority(1)       // Høy prioritet: denne skal vises
+                                        }
+                                        .font(RetroTheme.font(size: 20, weight: .heavy))
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "arrow.right.to.line")
+                                    }
+                                    .padding()
+                                    .foregroundColor(.black)
+                                    .background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
                                 }
                                 .disabled(heatInput == 0 || isNamingJob)
+                                
+                                // KNAPP 3: NY EKSTRA KNAPP (Vises kun hvis setting er PÅ)
+                                if enableExtendedData {
+                                    Button(action: {
+                                        // Hva som skjer her kommer vi tilbake til senere
+                                    }) {
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "pencil.and.list.clipboard") // Midlertidig ikon for "mer data"
+                                                .font(RetroTheme.font(size: 16, weight: .bold))
+                                            Text("DATA+")
+                                                .font(RetroTheme.font(size: 8))
+                                        }
+                                        .foregroundColor(RetroTheme.primary)
+                                        .frame(width: 60, height: 50) // Litt smalere enn New Job for å spare plass
+                                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                    }
+                                    .transition(.move(edge: .trailing).combined(with: .opacity)) // Fin animasjon når den dukker opp
+                                }
                             }.padding(.horizontal).padding(.top, 25)
                             
                             ScrollView {

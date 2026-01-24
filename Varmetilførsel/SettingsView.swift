@@ -2,93 +2,12 @@
 //  SettingsView.swift
 //  Varmetilførsel
 //
-//  Created by Frode Halrynjo on 18/01/2026.
+//  Refactored for Clean Retro Style & Native Localization
 //
 
 import SwiftUI
 import SwiftData
 
-// --- CHUNKY SWITCH (Medium størrelse) ---
-struct RetroChunkySwitch: View {
-    let leftLabel: String
-    let rightLabel: String
-    @Binding var isLeftSelected: Bool
-    
-    // Justerte dimensjoner for "mellomstor" størrelse
-    let height: CGFloat = 36
-    let hPadding: CGFloat = 16
-    
-    var body: some View {
-        HStack(spacing: 0) {
-            // Venstre valg
-            Button(action: {
-                if !isLeftSelected {
-                    Haptics.selection()
-                    isLeftSelected = true
-                }
-            }) {
-                Text(leftLabel)
-                    .font(RetroTheme.font(size: 13, weight: .bold)) // Litt mindre font
-                    .foregroundColor(isLeftSelected ? Color.black : RetroTheme.primary)
-                    .frame(height: height)
-                    .padding(.horizontal, hPadding)
-                    .background(isLeftSelected ? RetroTheme.primary : Color.black)
-            }
-            .buttonStyle(.plain)
-            
-            // Skillelinje
-            Rectangle()
-                .fill(RetroTheme.primary)
-                .frame(width: 2, height: height)
-            
-            // Høyre valg
-            Button(action: {
-                if isLeftSelected {
-                    Haptics.selection()
-                    isLeftSelected = false
-                }
-            }) {
-                Text(rightLabel)
-                    .font(RetroTheme.font(size: 13, weight: .bold)) // Litt mindre font
-                    .foregroundColor(!isLeftSelected ? Color.black : RetroTheme.primary)
-                    .frame(height: height)
-                    .padding(.horizontal, hPadding)
-                    .background(!isLeftSelected ? RetroTheme.primary : Color.black)
-            }
-            .buttonStyle(.plain)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(RetroTheme.primary, lineWidth: 2)
-        )
-    }
-}
-
-// --- RAD FOR INNSTILLINGER ---
-struct RetroSettingRow<Content: View>: View {
-    let title: LocalizedStringKey
-    let content: Content
-    
-    init(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(RetroTheme.font(size: 16, weight: .bold))
-                .foregroundColor(RetroTheme.primary)
-            
-            Spacer()
-            
-            content
-        }
-        .padding(.vertical, 10) // Litt mindre luft enn sist
-    }
-}
-
-// --- HOVEDVIEW ---
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     
@@ -96,22 +15,24 @@ struct SettingsView: View {
     @AppStorage("app_language") private var selectedLanguage: String = "nb"
     @AppStorage("enable_haptics") private var enableHaptics: Bool = true
     @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
+    @AppStorage("enableExtendedData") private var enableExtendedData = false
     
-    // State for skuffen
+    // State for skuffen (Process Drawer)
     @State private var showProcessDrawer: Bool = false
     
     @Binding var showSettings: Bool
     
-    // Hjelpe-variabler
+    // --- BEREGNEDE EGENSKAPER ---
+    
+    // Konverterer String ("nb"/"en") til Bool for Toggle
     var isNorwegian: Binding<Bool> {
-        Binding(get: { selectedLanguage == "nb" }, set: { selectedLanguage = $0 ? "nb" : "en" })
+        Binding(
+            get: { selectedLanguage == "nb" },
+            set: { selectedLanguage = $0 ? "nb" : "en" }
+        )
     }
     
-    var isHapticsOn: Binding<Bool> {
-        Binding(get: { enableHaptics }, set: { enableHaptics = $0 })
-    }
-    
-    // Teller for status-tekst
+    // Teller for aktive prosesser
     var activeCount: Int {
         let hiddenSet = Set(hiddenProcessCodes.split(separator: ",").map(String.init))
         return WeldingProcess.allProcesses.filter { !hiddenSet.contains($0.code) }.count
@@ -120,19 +41,23 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             // 1. BAKGRUNN
-            RetroTheme.background.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
             
-            // 2. HOVEDINNHOLD
             VStack(spacing: 0) {
-                // HEADER
+                
+                // 2. HEADER
                 HStack {
-                    Text("KONFIGURASJON")
+                    Text("KONFIGURASJON") // Key for Localizable
                         .font(RetroTheme.font(size: 18, weight: .heavy))
                         .foregroundColor(RetroTheme.primary)
+                    
                     Spacer()
-                    Button(action: { withAnimation(.easeInOut) { showSettings = false } }){
-                        Text("TILBAKE")
-                            .font(RetroTheme.font(size: 13, weight: .bold))
+                    
+                    Button(action: {
+                        withAnimation(.easeInOut) { showSettings = false }
+                    }){
+                        Text("LUKK") // Key for Localizable
+                            .font(RetroTheme.font(size: 12, weight: .bold))
                             .foregroundColor(RetroTheme.primary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
@@ -140,44 +65,56 @@ struct SettingsView: View {
                     }
                 }
                 .padding()
-              //  .background(RetroTheme.surface)
                 
+                // 3. HOVEDLISTE
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 32) { // Justert avstand
+                    VStack(alignment: .leading, spacing: 32) {
                         
-                        // --- GENERAL ---
-                        VStack(alignment: .leading, spacing: 0) {
+                        // --- A: GENERELT ---
+                        VStack(alignment: .leading, spacing: 16) {
                             SectionHeader(title: "GENERELT")
                             
-                            RetroSettingRow("Språk") {
-                                RetroChunkySwitch(leftLabel: "NO", rightLabel: "EN", isLeftSelected: isNorwegian)
-                            }
+                            // Språk (Toggle styrer nb/en)
+                            RetroToggle(
+                                title: "SPRÅK", // Oversettelsen av denne bør inkludere evt status i teksten hvis ønskelig, eller bare hete "Språk" / "Language"
+                                isOn: isNorwegian
+                            )
                             
                             DividerLine()
                             
-                            RetroSettingRow("Vibrasjon") {
-                                RetroChunkySwitch(leftLabel: "PÅ", rightLabel: "AV", isLeftSelected: isHapticsOn)
-                            }
+                            // Vibrasjon
+                            RetroToggle(
+                                title: "VIBRASJON",
+                                isOn: $enableHaptics
+                            )
+                            
+                            DividerLine()
+                            
+                            // Utvidet Data (Ny funksjon)
+                            RetroToggle(
+                                title: "UTVIDET DATA",
+                                isOn: $enableExtendedData
+                            )
                         }
                         
-                        // --- SVEISEPROSESSER ---
+                        // --- B: KALKULATOR / PROSESSER ---
                         VStack(alignment: .leading, spacing: 12) {
                             SectionHeader(title: "KALKULATOR")
                             
-                            // MODUL: Tekst til venstre, Knapp til høyre
                             HStack(alignment: .center, spacing: 16) {
-                                // VENSTRE SIDE: Forklaring
+                                // Info tekst
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("SVEISEMETODER")
                                         .font(RetroTheme.font(size: 16, weight: .bold))
                                         .foregroundColor(RetroTheme.primary)
                                     
-                                    Text("Velg prosesser, k-faktor og standarder (ISO/AWS).")
+                                    Text("Velg prosesser, k-faktor og standarder.")
                                         .font(RetroTheme.font(size: 12))
                                         .foregroundColor(RetroTheme.dim)
                                         .fixedSize(horizontal: false, vertical: true)
                                     
-                                    // Statusindikator
+                                    // SwiftUI interpolering håndterer oversettelse hvis nøkkelen finnes i stringsdict,
+                                    // ellers bør man bruke en format-string.
                                     Text("STATUS: \(activeCount) AKTIVE")
                                         .font(RetroTheme.font(size: 10, weight: .bold))
                                         .foregroundColor(RetroTheme.primary)
@@ -186,34 +123,29 @@ struct SettingsView: View {
                                 
                                 Spacer()
                                 
-                                // HØYRE SIDE: Handlingsknapp (Litt mindre enn sist)
+                                // Endre-knapp
                                 Button(action: {
                                     Haptics.selection()
                                     showProcessDrawer = true
                                 }) {
                                     VStack(spacing: 4) {
                                         Image(systemName: "slider.horizontal.3")
-                                            .font(.system(size: 20)) // Litt mindre ikon
+                                            .font(.system(size: 18))
                                         Text("ENDRE")
                                             .font(RetroTheme.font(size: 10, weight: .bold))
                                     }
                                     .foregroundColor(RetroTheme.primary)
-                                    .frame(width: 60, height: 48) // Litt mindre ramme
+                                    .frame(width: 60, height: 48)
                                     .background(Color.black)
-                                    .overlay(
-                                        Rectangle().stroke(RetroTheme.primary, lineWidth: 1)
-                                    )
-                                    .shadow(color: RetroTheme.dim.opacity(0.3), radius: 0, x: 2, y: 2)
+                                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                                 }
                                 .buttonStyle(.plain)
                             }
                             .padding(14)
-                            .overlay(
-                                Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1)
-                            )
+                            .overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
                         }
                         
-                        // --- MANUAL ---
+                        // --- C: MANUAL ---
                         VStack(alignment: .leading, spacing: 10) {
                             SectionHeader(title: "BRUKERVEILEDNING")
                             RetroGuideView(isDetailed: true)
@@ -222,10 +154,9 @@ struct SettingsView: View {
                         Spacer(minLength: 40)
                         
                         // --- FOOTER ---
-                        let year = Calendar.current.component(.year, from: Date())
                         VStack(spacing: 6) {
-                            Text("Varmetilførsel v1.0")
-                            Text("© \(String(year)) Frode Halrynjo")
+                            Text("Varmetilførsel v1.1")
+                            Text("© \(String(Calendar.current.component(.year, from: Date()))) Frode Halrynjo")
                         }
                         .font(RetroTheme.font(size: 10))
                         .foregroundColor(RetroTheme.dim)
@@ -237,91 +168,95 @@ struct SettingsView: View {
             .opacity(showProcessDrawer ? 0.3 : 1.0)
             .disabled(showProcessDrawer)
             
-            // 3. SKUFFEN (Unified Drawer)
+            // 4. SKUFFEN (PROSESS-VELGER)
             RetroModalDrawer(
                 isPresented: $showProcessDrawer,
-                title: "AKTIVE PROSESSER",
+                title: "AKTIVE PROSESSER", // Lokaliseres automatisk
                 fromTop: false
             ) {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(WeldingProcess.allProcesses, id: \.self) { process in
-                            let isHidden = hiddenProcessCodes.contains(process.code)
-                            let isLocked = process.code == "Arc"
-                            let isChecked = !isHidden
-                            
-                            Button(action: {
-                                if !isLocked {
-                                    Haptics.selection()
-                                    toggleProcess(process.code)
-                                }
-                            }) {
-                                HStack(spacing: 12) {
-                                    
-                                    // 1. INFO COLUMN (Navn + Koder)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(process.name)
-                                            .font(RetroTheme.font(size: 14, weight: .bold))
-                                            .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
-                                        
-                                        // Viser både ISO og AWS kode på linjen under
-                                        HStack(spacing: 0) {
-                                            Text("ISO: \(process.code)")
-                                            if process.awsCode != "-" {
-                                                Text(" • AWS: \(process.awsCode)")
-                                            }
-                                        }
-                                        .font(RetroTheme.font(size: 10))
-                                        .foregroundColor(RetroTheme.dim)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    // 2. K-FAKTOR (Høyre side)
-                                    if !isLocked {
-                                        Text("k=\(process.kFactor, specifier: "%.1f")")
-                                            .font(RetroTheme.font(size: 12, weight: .bold))
-                                            .foregroundColor(RetroTheme.dim)
-                                    }
-                                    
-                                    // 3. CHECKBOX / LOCK
-                                    ZStack {
-                                        if isLocked {
-                                            Image(systemName: "lock.fill")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(RetroTheme.dim)
-                                        } else {
-                                            if isChecked {
-                                                Rectangle().fill(RetroTheme.primary).frame(width: 10, height: 10)
-                                            }
-                                        }
-                                    }
-                                    .frame(width: 20, height: 20)
-                                    .overlay(Rectangle().stroke(isLocked ? RetroTheme.dim : (isChecked ? RetroTheme.primary : RetroTheme.dim), lineWidth: 1))
-                                }
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 16)
-                                .background(isChecked ? RetroTheme.primary.opacity(0.05) : Color.black)
-                                .contentShape(Rectangle()) // Sikrer trykkflate
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(isLocked)
-                            
-                            // Skillelinje
-                            if process != WeldingProcess.allProcesses.last {
-                                Rectangle().fill(RetroTheme.dim.opacity(0.2)).frame(height: 1)
-                                    .padding(.horizontal, 16)
-                            }
-                        }
-                    }
-                }
-                .frame(maxHeight: 400)
+                processSelectionList
             }
         }
         .crtScreen()
     }
     
+    // --- RYDDIG LISTE FOR PROSESSER ---
+    var processSelectionList: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(WeldingProcess.allProcesses, id: \.self) { process in
+                    let isHidden = hiddenProcessCodes.contains(process.code)
+                    let isLocked = process.code == "Arc"
+                    let isChecked = !isHidden
+                    
+                    Button(action: {
+                        if !isLocked {
+                            Haptics.selection()
+                            toggleProcess(process.code)
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            // Navn og kode
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(process.name) // Navn kommer fra modell, bør ideelt sett også være LocalizedStringKey
+                                    .font(RetroTheme.font(size: 14, weight: .bold))
+                                    .foregroundColor(isChecked ? RetroTheme.primary : RetroTheme.dim)
+                                
+                                HStack(spacing: 0) {
+                                    Text("ISO: \(process.code)")
+                                    if process.awsCode != "-" {
+                                        Text(" • AWS: \(process.awsCode)")
+                                    }
+                                }
+                                .font(RetroTheme.font(size: 10))
+                                .foregroundColor(RetroTheme.dim)
+                            }
+                            
+                            Spacer()
+                            
+                            // k-faktor
+                            if !isLocked {
+                                Text("k=\(process.kFactor, specifier: "%.1f")")
+                                    .font(RetroTheme.font(size: 12, weight: .bold))
+                                    .foregroundColor(RetroTheme.dim)
+                            }
+                            
+                            // Checkbox
+                            ZStack {
+                                if isLocked {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(RetroTheme.dim)
+                                } else {
+                                    if isChecked {
+                                        Rectangle().fill(RetroTheme.primary).frame(width: 10, height: 10)
+                                    }
+                                }
+                            }
+                            .frame(width: 20, height: 20)
+                            .overlay(Rectangle().stroke(isChecked || isLocked ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1))
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                        .background(isChecked ? RetroTheme.primary.opacity(0.05) : Color.black)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLocked)
+                    
+                    // Skillelinje
+                    if process != WeldingProcess.allProcesses.last {
+                        Rectangle().fill(RetroTheme.dim.opacity(0.2)).frame(height: 1)
+                            .padding(.horizontal, 16)
+                    }
+                }
+            }
+        }
+        .frame(maxHeight: 400)
+    }
+    
     // --- HJELPEFUNKSJONER ---
+    
     private func toggleProcess(_ code: String) {
         var codes = hiddenProcessCodes.split(separator: ",").map { String($0) }
         if codes.contains(code) {
@@ -332,7 +267,8 @@ struct SettingsView: View {
         hiddenProcessCodes = codes.joined(separator: ",")
     }
     
-    private func SectionHeader(title: String) -> some View {
+    // Tar nå inn LocalizedStringKey for automatisk oversettelse
+    private func SectionHeader(title: LocalizedStringKey) -> some View {
         Text(title)
             .font(RetroTheme.font(size: 12))
             .foregroundColor(RetroTheme.dim)
@@ -345,4 +281,67 @@ struct SettingsView: View {
             .frame(height: 1)
             .padding(.vertical, 4)
     }
+}
+
+// --- STANDARD RETRO TOGGLE COMPONENT ---
+// (Kan gjerne flyttes til Helpers.swift hvis du vil bruke den andre steder)
+struct RetroToggle: View {
+    let title: LocalizedStringKey // Endret til LocalizedStringKey
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(RetroTheme.font(size: 18, weight: .bold))
+                .foregroundColor(RetroTheme.primary)
+
+            Spacer()
+
+            // Selve bryter-området
+            ZStack {
+                // Rammen (Track)
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(RetroTheme.primary, lineWidth: 2)
+                    .background(Color.black.opacity(0.01))
+                    .frame(width: 60, height: 32)
+                
+                // Bakgrunn som indikerer PÅ
+                if isOn {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(RetroTheme.primary.opacity(0.2))
+                        .frame(width: 60, height: 32)
+                }
+
+                // Knappen (Thumb)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(isOn ? RetroTheme.primary : RetroTheme.dim)
+                    .frame(width: 24, height: 24)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 2)
+                            .stroke(Color.black, lineWidth: 2)
+                            .opacity(0.3)
+                    )
+                    .shadow(color: isOn ? RetroTheme.primary.opacity(0.8) : .clear, radius: 5)
+                    .offset(x: isOn ? 13 : -13)
+            }
+            .onTapGesture {
+                Haptics.selection()
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) {
+                    isOn.toggle()
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            Haptics.selection()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isOn.toggle()
+            }
+        }
+    }
+}
+
+// Preview
+#Preview {
+    SettingsView(showSettings: .constant(true))
 }

@@ -13,6 +13,9 @@
     "/" : {
 
     },
+    "#%lld" : {
+
+    },
     "%lld passes" : {
 
     },
@@ -21,23 +24,6 @@
     },
     "© %@ Frode Halrynjo" : {
 
-    },
-    "© %@ Frode Halrynjo. Med enerett." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© %@ Frode Halrynjo. All rights reserved."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© %@ Frode Halrynjo. Med enerett."
-          }
-        }
-      }
     },
     "×" : {
 
@@ -66,18 +52,10 @@
     "AVG: %@ kJ/mm" : {
 
     },
-    "BACK" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TILBAKE"
-          }
-        }
-      }
-    },
     "BRUKERMANUAL v1.0" : {
+
+    },
+    "BRUKERVEILEDNING" : {
 
     },
     "CANCEL" : {
@@ -86,17 +64,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ANGRE"
-          }
-        }
-      }
-    },
-    "CONFIGURATION" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "KONFIGURASJON"
           }
         }
       }
@@ -110,6 +77,9 @@
           }
         }
       }
+    },
+    "DATA+" : {
+
     },
     "ENDRE" : {
 
@@ -126,6 +96,9 @@
           }
         }
       }
+    },
+    "GENERELT" : {
+
     },
     "HEAT INPUT" : {
       "localizations" : {
@@ -158,6 +131,9 @@
     "k=%.1f" : {
 
     },
+    "KALKULATOR" : {
+
+    },
     "KONFIGURASJON" : {
       "localizations" : {
         "nb" : {
@@ -168,26 +144,8 @@
         }
       }
     },
-    "LANGUAGE" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SPRÅK"
-          }
-        }
-      }
-    },
-    "LOG PASS #%lld" : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LOGG STRENG #%lld"
-          }
-        }
-      }
+    "LOG PASS" : {
+
     },
     "LOGGED PASSES (%lld)" : {
       "localizations" : {
@@ -198,6 +156,9 @@
           }
         }
       }
+    },
+    "LUKK" : {
+
     },
     "NEW JOB" : {
       "localizations" : {
@@ -261,8 +222,15 @@
     "Speed: %@ mm/min" : {
 
     },
-    "Språk" : {
-
+    "SPRÅK" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LANGUAGE"
+          }
+        }
+      }
     },
     "START" : {
 
@@ -271,10 +239,14 @@
 
     },
     "SVEISEMETODER" : {
-
-    },
-    "TILBAKE" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WELDINGPROCESSES"
+          }
+        }
+      }
     },
     "TIMER READY" : {
       "localizations" : {
@@ -286,22 +258,28 @@
         }
       }
     },
-    "Varmetilførsel v1.0" : {
-
-    },
-    "Velg prosesser, k-faktor og standarder (ISO/AWS)." : {
-
-    },
-    "Vibrasjon" : {
-
-    },
-    "VIBRATION FEEDBACK" : {
-      "extractionState" : "stale",
+    "UTVIDET DATA" : {
       "localizations" : {
-        "nb" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "VIBRASJONSRESPONS"
+            "value" : "EXTENDED DATA"
+          }
+        }
+      }
+    },
+    "Varmetilførsel v1.1" : {
+
+    },
+    "Velg prosesser, k-faktor og standarder." : {
+
+    },
+    "VIBRASJON" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIBRATION"
           }
         }
       }
