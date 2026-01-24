@@ -4,13 +4,38 @@
 //
 //  Created by Frode Halrynjo on 18/01/2026.
 //
+
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers // VIKTIG: For filhåndtering
 
 struct JobDetailView: View {
     @Bindable var job: WeldGroup
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
+    
+    // Hjelpefunksjon som lagrer filen til disk og returnerer URL-en
+    // Dette tvinger iOS til å behandle det som en fil, ikke tekst.
+    func generateExportFile() -> URL {
+        let csvContent = job.generateCSV()
+        
+        // Lag filnavn
+        let safeName = job.name.replacingOccurrences(of: " ", with: "_")
+        let dateString = job.date.formatted(date: .numeric, time: .omitted).replacingOccurrences(of: "/", with: "-")
+        let fileName = "\(safeName)_\(dateString).csv"
+        
+        // Lagre til midlertidig mappe
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileUrl = tempDir.appendingPathComponent(fileName)
+        
+        do {
+            try csvContent.write(to: fileUrl, atomically: true, encoding: .utf8)
+        } catch {
+            print("Kunne ikke lagre eksportfil: \(error)")
+        }
+        
+        return fileUrl
+    }
     
     var body: some View {
         ZStack {
@@ -37,8 +62,11 @@ struct JobDetailView: View {
                     
                     Spacer()
                     
-                    // EKSPORT-KNAPP MED NYE DATA
-                    ShareLink(item: job.generateCSV(), preview: SharePreview(job.name)) {
+                    // --- EKSPORT-KNAPP (URL-BASERT) ---
+                    // Vi genererer filen og gir URL-en til ShareLink.
+                    let fileUrl = generateExportFile()
+                    
+                    ShareLink(item: fileUrl) {
                         HStack(spacing: 5) {
                             Text("EXPORT")
                             Image(systemName: "square.and.arrow.up")
@@ -147,7 +175,6 @@ struct JobPassesList: View {
 }
 
 // --- NY UTVIDET RAD-VISNING ---
-// Denne erstatter RetroHistoryRow for å vise de nye datafeltene
 struct DetailedPassRow: View {
     let pass: SavedCalculation
     var onDelete: () -> Void
@@ -239,27 +266,18 @@ struct DetailedPassRow: View {
         .overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
     }
     
-    // Hjelper for hovedparametre
     func ParamValue(label: String, value: String) -> some View {
         HStack(spacing: 2) {
-            Text(label + ":")
-                .foregroundColor(RetroTheme.dim)
-            Text(value)
-                .foregroundColor(RetroTheme.primary)
-        }
-        .font(RetroTheme.font(size: 10))
+            Text(label + ":").foregroundColor(RetroTheme.dim)
+            Text(value).foregroundColor(RetroTheme.primary)
+        }.font(RetroTheme.font(size: 10))
     }
     
-    // Hjelper for utvidet data
     func ExtValue(icon: String, text: String) -> some View {
         HStack(spacing: 2) {
             Image(systemName: icon).font(.system(size: 8))
             Text(text)
-        }
-        .font(RetroTheme.font(size: 9))
-        .foregroundColor(RetroTheme.dim)
-        .padding(2)
-        .overlay(RoundedRectangle(cornerRadius: 2).stroke(RetroTheme.dim.opacity(0.3), lineWidth: 1))
+        }.font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.dim).padding(2).overlay(RoundedRectangle(cornerRadius: 2).stroke(RetroTheme.dim.opacity(0.3), lineWidth: 1))
     }
     
     func hasExtendedData(_ p: SavedCalculation) -> Bool {
@@ -271,83 +289,91 @@ struct DetailedPassRow: View {
 struct RetroTextField: View {
     let title: String
     @Binding var text: String
-    
     @State private var localText: String = ""
     @FocusState private var isFocused: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(RetroTheme.font(size: 9))
-                .foregroundColor(RetroTheme.primary)
-            
-            TextField("", text: $localText)
-                .font(RetroTheme.font(size: 14))
-                .foregroundColor(RetroTheme.primary)
-                .padding(8)
-                .background(Color.black)
-                .overlay(Rectangle().stroke(isFocused ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1))
-                .focused($isFocused)
-                .onAppear {
-                    localText = text
-                }
-                .onChange(of: isFocused) { oldValue, newValue in
-                    if !newValue {
-                        text = localText
-                    }
-                }
-                .onSubmit {
-                    text = localText
-                }
+            Text(title).font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.primary)
+            TextField("", text: $localText).font(RetroTheme.font(size: 14)).foregroundColor(RetroTheme.primary).padding(8).background(Color.black).overlay(Rectangle().stroke(isFocused ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1)).focused($isFocused)
+                .onAppear { localText = text }
+                .onChange(of: isFocused) { _, newValue in if !newValue { text = localText } }
+                .onSubmit { text = localText }
         }
     }
 }
 
-// --- UTVIDELSE FOR CSV GENERERING ---
+// --- UTVIDELSE FOR CSV GENERERING (Dynamisk basert på App-språk) ---
+// --- UTVIDELSE FOR CSV GENERERING (Komplett med Metadata) ---
 extension WeldGroup {
     func generateCSV() -> String {
+        // 1. Bruk telefonens gjeldende regioninnstillinger (Locale.current)
+        let formatter = NumberFormatter()
+        formatter.locale = .current
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
+        formatter.usesGroupingSeparator = false
+        
+        // 2. Bestem separatorer basert på region
+        let decimalSep = formatter.decimalSeparator ?? "."
+        let colSep = (decimalSep == ",") ? ";" : ","
+        
         var csv = ""
         
-        // 1. Header Info (Metadata)
-        csv += "JOB REPORT;Varmetilforsel App\n"
-        csv += "Name;\"\(self.name)\"\n"
-        csv += "Date;\"\(self.date.formatted(date: .numeric, time: .omitted))\"\n"
-        csv += "WPQR;\"\(self.wpqrNumber)\"\n"
-        csv += "Notes;\"\(self.notes)\"\n"
+        // 3. Header Info (Metadata)
+        csv += "JOB REPORT\(colSep)Varmetilforsel App\n"
+        csv += "Name\(colSep)\"\(self.name)\"\n"
+        csv += "Date\(colSep)\"\(self.date.formatted(date: .numeric, time: .omitted))\"\n"
+        csv += "WPQR\(colSep)\"\(self.wpqrNumber)\"\n"
+        
+        // Legger til de nye metadata-feltene her:
+        csv += "Preheat Temp\(colSep)\"\(self.preheatTemp) °C\"\n"
+        csv += "Max Interpass\(colSep)\"\(self.interpassTemp) °C\"\n"
+        
+        csv += "Notes\(colSep)\"\(self.notes)\"\n"
         csv += "\n"
         
-        // 2. Kolonneoverskrifter (Oppdatert med nye felt)
-        csv += "Pass;Process;Voltage (V);Amperage (A);Time (s);Length (mm);Energy (kJ/mm);k-Factor;Diameter (mm);Polarity;WFS (m/min);Timestamp\n"
+        // 4. Kolonneoverskrifter
+        let headers = [
+            "Pass", "Process", "Voltage (V)", "Amperage (A)", "Time (s)",
+            "Length (mm)", "Energy (kJ/mm)", "k-Factor", "Diameter (mm)",
+            "Polarity", "WFS (m/min)", "Timestamp"
+        ]
+        csv += headers.joined(separator: colSep) + "\n"
         
-        // 3. Data
+        // 5. Data-rader
         let sortedPasses = self.passes.sorted(by: { $0.timestamp < $1.timestamp })
         
         for pass in sortedPasses {
-            // Hent verdier trygt
-            let v = pass.voltage ?? 0
-            let a = pass.amperage ?? 0
-            let t = pass.travelTime ?? 0
-            let l = pass.weldLength ?? 0
-            let h = pass.heatInput // Bruker lagret verdi
-            let time = pass.timestamp.formatted(date: .omitted, time: .shortened)
+            func fmt(_ val: Double?) -> String {
+                guard let v = val, v > 0 else { return "" }
+                return formatter.string(from: NSNumber(value: v)) ?? ""
+            }
             
-            // Utvidede felt (håndterer tomme verdier)
-            let proc = pass.processName
-            // Hvis Arc Energy, vis "AE" eller 1.0, ellers k-faktoren
-            let kVal = pass.isArcEnergy ? "1.0 (AE)" : format(pass.kFactorUsed)
+            let heatVal = formatter.string(from: NSNumber(value: pass.heatInput)) ?? "0\(decimalSep)00"
+            let timeStamp = pass.timestamp.formatted(date: .omitted, time: .shortened)
             
-            let dia = pass.fillerDiameter != nil && pass.fillerDiameter! > 0 ? format(pass.fillerDiameter!) : ""
-            let pol = pass.polarity ?? ""
-            let wfs = pass.wireFeedSpeed != nil && pass.wireFeedSpeed! > 0 ? format(pass.wireFeedSpeed!) : ""
+            let kVal = pass.isArcEnergy ? "1\(decimalSep)0 (AE)" : (formatter.string(from: NSNumber(value: pass.kFactorUsed)) ?? "")
             
-            let row = "\(pass.name);\(proc);\(format(v));\(format(a));\(format(t));\(format(l));\(format(h));\(kVal);\(dia);\(pol);\(wfs);\(time)\n"
-            csv += row
+            let row = [
+                pass.name,
+                pass.processName,
+                fmt(pass.voltage),
+                fmt(pass.amperage),
+                fmt(pass.travelTime),
+                fmt(pass.weldLength),
+                heatVal,
+                kVal,
+                fmt(pass.fillerDiameter),
+                pass.polarity ?? "",
+                fmt(pass.wireFeedSpeed),
+                timeStamp
+            ].joined(separator: colSep)
+            
+            csv += row + "\n"
         }
         
         return csv
-    }
-    
-    private func format(_ value: Double) -> String {
-        return String(format: "%.2f", value)
     }
 }
