@@ -22,7 +22,6 @@ final class WeldGroup {
     var preheatTemp: String = ""
     var interpassTemp: String = ""
     
-    // Relasjon: En jobb har mange sveiser
     @Relationship(deleteRule: .cascade, inverse: \SavedCalculation.group)
     var passes: [SavedCalculation] = []
     
@@ -37,7 +36,7 @@ final class WeldGroup {
 @Model
 final class SavedCalculation {
     var id: UUID
-    var name: String        // F.eks "Pass #1"
+    var name: String
     var timestamp: Date
     
     // --- Kjerne Data ---
@@ -45,24 +44,29 @@ final class SavedCalculation {
     var amperage: Double?
     var travelTime: Double?
     var weldLength: Double?
-    var heatInput: Double   // Resultatet (kJ/mm)
+    var heatInput: Double
     
     // --- Prosess Data ---
     var processName: String
     var kFactorUsed: Double
     
-    // --- Utvidet Data ---
-    var fillerDiameter: Double? // mm
-    var polarity: String?       // DC+, DC-, AC
-    var wireFeedSpeed: Double?  // m/min
-    var isArcEnergy: Bool = false  // false = Heat Input, true = Arc Energy
+    // --- Utvidet Data (Eksisterende) ---
+    var fillerDiameter: Double?
+    var polarity: String?
+    var wireFeedSpeed: Double?
+    var isArcEnergy: Bool = false
     
-    // --- NYE FELTER (25.01.2026) ---
-    var actualInterpass: Double? // Faktisk målt temperatur
-    var gasType: String?         // Navn på gass
-    var passType: String?        // "Root", "Fill", "Cap", "-"
+    // --- Utvidet Data (Lagt til 25.01) ---
+    var actualInterpass: Double?
+    var gasType: String?
+    var passType: String?
     
-    // Relasjon til jobben
+    // --- NYE FELTER (Lagt til NÅ) ---
+    var gasFlow: Double?        // l/min
+    var transferMode: String?   // Spray, Short, Pulse, etc.
+    var fillerMaterial: String? // Type tråd (f.eks "316L")
+    var savedTravelSpeed: Double? // Lagret utregnet hastighet (mm/min)
+    
     var group: WeldGroup?
     
     init(name: String,
@@ -79,7 +83,13 @@ final class SavedCalculation {
          isArcEnergy: Bool = false,
          actualInterpass: Double? = nil,
          gasType: String? = nil,
-         passType: String? = nil) {
+         passType: String? = nil,
+         // Nye parametre:
+         gasFlow: Double? = nil,
+         transferMode: String? = nil,
+         fillerMaterial: String? = nil,
+         savedTravelSpeed: Double? = nil
+    ) {
         
         self.id = UUID()
         self.name = name
@@ -102,9 +112,14 @@ final class SavedCalculation {
         self.actualInterpass = actualInterpass
         self.gasType = gasType
         self.passType = passType
+        
+        // Nye
+        self.gasFlow = gasFlow
+        self.transferMode = transferMode
+        self.fillerMaterial = fillerMaterial
+        self.savedTravelSpeed = savedTravelSpeed
     }
     
-    // Hjelpe-variabel for visning i lister
     var resultValue: String {
         let value = String(format: "%.2f kJ/mm", heatInput)
         return isArcEnergy ? "\(value) (AE)" : value

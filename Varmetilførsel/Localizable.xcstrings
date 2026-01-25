@@ -10,9 +10,6 @@
     "(%@)" : {
 
     },
-    "(k=%@)" : {
-
-    },
     "[%@]" : {
 
     },
@@ -20,6 +17,9 @@
 
     },
     "#%lld" : {
+
+    },
+    "%@ l/min" : {
 
     },
     "%lld passes" : {
@@ -67,6 +67,9 @@
     "BRUKERVEILEDNING" : {
 
     },
+    "CALC. SPEED" : {
+
+    },
     "CANCEL" : {
       "localizations" : {
         "nb" : {
@@ -93,10 +96,16 @@
     "ENDRE" : {
 
     },
+    "Ex: 316L" : {
+
+    },
     "Ex: Mison 18" : {
 
     },
     "EXPORT" : {
+
+    },
+    "FILLER METAL" : {
 
     },
     "FINISH" : {
@@ -207,9 +216,6 @@
         }
       }
     },
-    "PASS TYPE" : {
-
-    },
     "POLARITET" : {
 
     },
@@ -294,7 +300,10 @@
         }
       }
     },
-    "TRAVEL SPEED" : {
+    "TRANSFER" : {
+
+    },
+    "TYPE" : {
 
     },
     "UTVIDET DATA" : {
