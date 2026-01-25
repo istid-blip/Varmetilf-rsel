@@ -51,11 +51,16 @@ final class SavedCalculation {
     var processName: String
     var kFactorUsed: Double
     
-    // --- Utvidet Data (Ny funksjonalitet) ---
+    // --- Utvidet Data ---
     var fillerDiameter: Double? // mm
     var polarity: String?       // DC+, DC-, AC
     var wireFeedSpeed: Double?  // m/min
     var isArcEnergy: Bool = false  // false = Heat Input, true = Arc Energy
+    
+    // --- NYE FELTER (25.01.2026) ---
+    var actualInterpass: Double? // Faktisk målt temperatur
+    var gasType: String?         // Navn på gass
+    var passType: String?        // "Root", "Fill", "Cap", "-"
     
     // Relasjon til jobben
     var group: WeldGroup?
@@ -71,7 +76,10 @@ final class SavedCalculation {
          fillerDiameter: Double? = nil,
          polarity: String? = nil,
          wireFeedSpeed: Double? = nil,
-         isArcEnergy: Bool = false) {
+         isArcEnergy: Bool = false,
+         actualInterpass: Double? = nil,
+         gasType: String? = nil,
+         passType: String? = nil) {
         
         self.id = UUID()
         self.name = name
@@ -90,9 +98,13 @@ final class SavedCalculation {
         self.polarity = polarity
         self.wireFeedSpeed = wireFeedSpeed
         self.isArcEnergy = isArcEnergy
+        
+        self.actualInterpass = actualInterpass
+        self.gasType = gasType
+        self.passType = passType
     }
     
-    // Hjelpe-variabel for visning i lister (Compute property)
+    // Hjelpe-variabel for visning i lister
     var resultValue: String {
         let value = String(format: "%.2f kJ/mm", heatInput)
         return isArcEnergy ? "\(value) (AE)" : value

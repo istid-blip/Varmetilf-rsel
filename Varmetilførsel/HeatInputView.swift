@@ -47,9 +47,11 @@ struct HeatInputView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
     
+    // NYTT: Lagt til interpass i enum
     enum InputTarget: String, Identifiable {
         case voltage, amperage, time, length
         case diameter, wfs
+        case interpass // <--- NY
         var id: String { rawValue }
     }
     
@@ -72,6 +74,12 @@ struct HeatInputView: View {
     @AppStorage("heat_pass_counter") private var passCounter: Int = 1
     @AppStorage("heat_active_job_id") private var storedJobID: String = ""
     @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
+    
+    // STORAGE FOR NYE FELTER (Husker gass, men nullstiller interpass)
+    @AppStorage("heat_gas_type") private var extGasType: String = ""
+    @State private var extActualInterpass: Double = 0.0
+    @State private var extPassType: String = "Fill" // Default
+    
     @State private var currentJobName: String = ""
     
     // STOPWATCH STORAGE
@@ -79,7 +87,7 @@ struct HeatInputView: View {
     @AppStorage("stopwatch_start_timestamp") private var timerStartTimestamp: Double = 0.0
     @AppStorage("stopwatch_accumulated_time") private var timerAccumulatedTime: Double = 0.0
     
-    // --- NYE FELTER FOR EXTENDED DATA ---
+    // --- FELTER FOR EXTENDED DATA ---
     @State private var showExtendedDrawer = false
     @State private var extDiameter: Double = 0.0
     @State private var extPolarity: String = "DC+"
@@ -122,7 +130,6 @@ struct HeatInputView: View {
                 RetroTheme.background.ignoresSafeArea()
                 
                 // 2. KLIKK-FANGER (LAG 1)
-                // Dekker hele skjermen bak innholdet. Fanger klikk på "tomme" områder.
                 if focusedField != nil {
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
@@ -136,8 +143,6 @@ struct HeatInputView: View {
                     VStack(spacing: 0) {
                         
                         // --- GRUPPE 1: TOPPEN (HEADER) ---
-                        // VIKTIG: zIndex(10) sørger for at denne ligger OVER input-boksen.
-                        // Dette gjør at dropdown-menyen legger seg oppå alt annet når den åpnes.
                         Group {
                             // Header
                             HStack {
@@ -170,12 +175,10 @@ struct HeatInputView: View {
                                 }.padding(.horizontal)
                             }
                         }
-                        .zIndex(10) // <--- MAGIEN: Headeren ligger alltid øverst i stabelen
+                        .zIndex(10) // Ligger over input-boksen
                         
                         
                         // --- GRUPPE 2: INPUT BOKS ---
-                        // zIndex(5) sørger for at denne ligger under headeren (slik at dropdown dekker den),
-                        // men over bakgrunnen/klikk-fangeren (slik at knapper virker).
                         ZStack {
                             RoundedRectangle(cornerRadius: 10).fill(isNamingJob ? Color.green.opacity(0.15) : Color.black.opacity(0.2)).stroke(isNamingJob ? Color.green : RetroTheme.dim, lineWidth: isNamingJob ? 2 : 1)
                             
@@ -225,13 +228,12 @@ struct HeatInputView: View {
                         }
                         .padding(.horizontal).frame(height: 180).padding(.top, 25)
                         .contentShape(Rectangle())
-                        // Håndterer klikk inne i boksen (mellom knappene)
                         .onTapGesture {
                             if focusedField != nil {
                                 withAnimation { focusedField = nil }
                             }
                         }
-                        .zIndex(5) // Ligger under Header, men over "klikk-fanger"
+                        .zIndex(5)
                         
                         
                         // --- GRUPPE 3: BUNNEN ---
@@ -321,13 +323,13 @@ struct HeatInputView: View {
                                 .animation(.easeOut(duration: 0.3), value: focusedField != nil)
                             }
                         }
-                        .zIndex(5) // Samme nivå som input-boks
+                        .zIndex(5)
                         
                     }.frame(height: geometry.size.height)
                 }
                 .offset(x: showSettings ? 300 : 0)
                 .opacity(showSettings ? 0 : 1)
-                .zIndex(2) // Hele innholdet ligger over klikk-fangeren (1)
+                .zIndex(2)
                 
                 // SETTINGS VIEW
                 if showSettings {
@@ -335,7 +337,7 @@ struct HeatInputView: View {
                         .transition(.move(edge: .leading))
                         .zIndex(3)
                 }
-                
+
                 // DATA+ DRAWER
                 RetroModalDrawer(isPresented: $showExtendedDrawer, title: "DATA +", fromTop: true) {
                     ExtendedInputView(
@@ -344,6 +346,11 @@ struct HeatInputView: View {
                         polarity: $extPolarity,
                         wireFeedSpeed: $extWireFeed,
                         isArcEnergy: $extIsArcEnergy,
+                        // NYE BINDINGS:
+                        actualInterpass: $extActualInterpass,
+                        gasType: $extGasType,
+                        passType: $extPassType,
+                        
                         calculatedTravelSpeed: calculatedSpeed,
                         focusedField: $focusedField
                     )
@@ -356,7 +363,7 @@ struct HeatInputView: View {
                         Spacer()
                         UnifiedInputDrawer(target: target, value: binding(for: target), range: range(for: target), step: step(for: target), isRecording: $isTimerRunning, onReset: resetStopwatch, onToggle: toggleStopwatch, onSync: { newValue in timerAccumulatedTime = newValue }).padding(.bottom, 50)
                     }.id("DrawerContainer").transition(.move(edge: .bottom))
-                        .zIndex(300)
+                    .zIndex(300)
                 }
             }
         }
@@ -373,20 +380,17 @@ struct HeatInputView: View {
                     Haptics.play(.heavy)
                 } else {
                     timeStr = String(format: "%.0f", total)
-                    
                 }
             }
         }
         .onChange(of: enableExtendedData) { _, newValue in
-                    if !newValue {
-                        withAnimation {
-                            extIsArcEnergy = false
-                        }
-                    }
-                }
+            if !newValue {
+                withAnimation { extIsArcEnergy = false }
+            }
+        }
     }
     
-    // --- HJELPEFUNKSJONER --- (Uendret)
+    // --- HJELPEFUNKSJONER ---
     func toggleStopwatch() {
         if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); isTimerRunning = false; Haptics.play(.medium) }
         else { timerStartTimestamp = Date().timeIntervalSince1970; isTimerRunning = true; Haptics.play(.heavy) }
@@ -412,7 +416,11 @@ struct HeatInputView: View {
             fillerDiameter: enableExtendedData ? extDiameter : nil,
             polarity: enableExtendedData ? extPolarity : nil,
             wireFeedSpeed: enableExtendedData ? extWireFeed : nil,
-            isArcEnergy: enableExtendedData ? extIsArcEnergy : false
+            isArcEnergy: enableExtendedData ? extIsArcEnergy : false,
+            // NYE FELTER
+            actualInterpass: enableExtendedData ? extActualInterpass : nil,
+            gasType: enableExtendedData ? extGasType : nil,
+            passType: enableExtendedData ? extPassType : nil
         )
         
         newPass.group = job; passCounter += 1; job.date = Date(); try? modelContext.save(); UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
@@ -437,6 +445,7 @@ struct HeatInputView: View {
         case .length: return Binding(get: { lengthStr.toDouble }, set: { lengthStr = String(format: "%.0f", $0) })
         case .diameter: return $extDiameter
         case .wfs: return $extWireFeed
+        case .interpass: return $extActualInterpass // NY
         }
     }
     
@@ -448,6 +457,7 @@ struct HeatInputView: View {
         case .length: return 0...10000
         case .diameter: return 0...6.0
         case .wfs: return 0...30.0
+        case .interpass: return 0...500.0 // NY
         }
     }
     
@@ -456,16 +466,18 @@ struct HeatInputView: View {
         case .voltage: return 0.1
         case .diameter: return 0.1
         case .wfs: return 0.1
-        default: return 1.0
+        default: return 1.0 // Interpass, Ampere, Tid, Lengde = 1.0
         }
     }
     
-    func selectProcess(_ p: WeldingProcess) { selectedProcessName = p.name; efficiency = p.kFactor; voltageStr = p.defaultVoltage; amperageStr = p.defaultAmperage; Haptics.selection()
-        if p.code == "Arc" {
-            extIsArcEnergy = true
-        } else {
-            extIsArcEnergy = false
-        }
+    func selectProcess(_ p: WeldingProcess) {
+        selectedProcessName = p.name;
+        efficiency = p.kFactor;
+        voltageStr = p.defaultVoltage;
+        amperageStr = p.defaultAmperage;
+        
+        if p.code == "Arc" { extIsArcEnergy = true } else { extIsArcEnergy = false }
+        
         Haptics.selection()
     }
     func restoreActiveJob() { if let id = activeJobID, let j = jobHistory.first(where: { $0.id == id }) { currentJobName = j.name; passCounter = j.passes.count + 1 } else { activeJobID = nil; passCounter = 1 } }
@@ -473,13 +485,16 @@ struct HeatInputView: View {
     func startNewSession() {
         activeJobID = nil; passCounter = 1; currentJobName = "";
         extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false;
+        // Resetter interpass og type, men beholder gass
+        extActualInterpass = 0.0
+        extPassType = "Fill"
+        
         Haptics.play(.medium)
     }
     func finalizeAndSaveJob() { withAnimation { isNamingJob = false }; startNewSession(); UINotificationFeedbackGenerator().notificationOccurred(.success) }
 }
 
 // --- 3. UNIFIED DRAWER ---
-// (Dette er den eksisterende koden din, beholdes uendret)
 struct UnifiedInputDrawer: View {
     let target: HeatInputView.InputTarget
     @Binding var value: Double
@@ -563,29 +578,54 @@ struct RetroJobRow: View {
     }
 }
 
-// --- 5. EXTENDED INPUT VIEW ---
+// --- 5. EXTENDED INPUT VIEW (OPPDATERT) ---
 struct ExtendedInputView: View {
     @Binding var process: WeldingProcess
     @Binding var diameter: Double
     @Binding var polarity: String
     @Binding var wireFeedSpeed: Double
     @Binding var isArcEnergy: Bool
+    
+    // NYE BINDINGS
+    @Binding var actualInterpass: Double
+    @Binding var gasType: String
+    @Binding var passType: String
+    
     let calculatedTravelSpeed: Double
     @Binding var focusedField: HeatInputView.InputTarget?
     
+    let passTypes = ["Root", "Fill", "Cap", "-"]
+    
     var body: some View {
         VStack(spacing: 20) {
-            // 1. PROSESS & ENERGI-MODUS
+            
+            // 1. PROSESS & TYPE
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PROSESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                     Text(process.name).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary)
                 }.frame(maxWidth: .infinity, alignment: .leading)
-                Button(action: { withAnimation { isArcEnergy.toggle() } }) {
-                    VStack(spacing: 2) { Text(isArcEnergy ? "ARC ENERGY" : "HEAT INPUT").font(RetroTheme.font(size: 10, weight: .bold)); Text(isArcEnergy ? "(NO k-FACTOR)" : "(ISO/AWS)").font(RetroTheme.font(size: 8)) }.foregroundColor(isArcEnergy ? .black : RetroTheme.primary).frame(width: 100, height: 36).background(isArcEnergy ? RetroTheme.primary : Color.black).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                
+                // PASS TYPE VELGER
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("PASS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                    HStack(spacing: 0) {
+                        ForEach(passTypes, id: \.self) { type in
+                            Button(action: { passType = type }) {
+                                Text(type.prefix(1)) // R, F, C, -
+                                    .font(RetroTheme.font(size: 10, weight: .bold))
+                                    .foregroundColor(passType == type ? .black : RetroTheme.primary)
+                                    .frame(height: 30).frame(maxWidth: .infinity)
+                                    .background(passType == type ? RetroTheme.primary : Color.black)
+                            }.buttonStyle(.plain)
+                            if type != passTypes.last { Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 30) }
+                        }
+                    }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                 }
             }
+            
             Divider().background(RetroTheme.dim)
+            
             // 2. DIAMETER & POLARITET
             HStack(spacing: 16) {
                 RetroInputBlock(label: "DIAMETER (Ø)", unit: "mm", value: diameter, isActive: focusedField == .diameter) { withAnimation { focusedField = .diameter } }
@@ -599,7 +639,25 @@ struct ExtendedInputView: View {
                     }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
                 }
             }
-            // 3. WFS & SPEED
+            
+            // 3. INTERPASS & GASS (NY)
+            HStack(spacing: 16) {
+                RetroInputBlock(label: "ACTUAL INTERPASS", unit: "°C", value: actualInterpass, isActive: focusedField == .interpass) {
+                    withAnimation { focusedField = .interpass }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                    TextField("Ex: Mison 18", text: $gasType)
+                        .font(RetroTheme.font(size: 14, weight: .bold))
+                        .foregroundColor(RetroTheme.primary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 44)
+                        .background(Color.black)
+                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                }
+            }
+            
+            // 4. WFS & SPEED
             HStack(spacing: 16) {
                 RetroInputBlock(label: "WFS", unit: "m/min", value: wireFeedSpeed, isActive: focusedField == .wfs) { withAnimation { focusedField = .wfs } }
                 VStack(alignment: .leading, spacing: 4) {
