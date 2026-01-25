@@ -25,6 +25,9 @@
     "%lld passes" : {
 
     },
+    "%lld valgt" : {
+
+    },
     "• ACTIVE JOB" : {
 
     },
@@ -91,6 +94,9 @@
       }
     },
     "DATA+" : {
+
+    },
+    "Du overstyrer nå de smarte standardvalgene. Kryss av feltene du ønsker skal være synlige." : {
 
     },
     "ENDRE" : {
@@ -190,6 +196,12 @@
     "LUKK" : {
 
     },
+    "Manuell modus. Du bestemmer hvilke felter som vises uansett prosess." : {
+
+    },
+    "MANUELL OVERSTYRING" : {
+
+    },
     "mm/min" : {
 
     },
@@ -242,6 +254,9 @@
         }
       }
     },
+    "REDIGER FELTER" : {
+
+    },
     "RESET" : {
 
     },
@@ -260,6 +275,9 @@
           }
         }
       }
+    },
+    "Smart-modus aktiv. Felter tilpasses automatisk valgt sveiseprosess." : {
+
     },
     "Speed: %@ mm/min" : {
 
@@ -316,7 +334,7 @@
         }
       }
     },
-    "Varmetilførsel v1.1" : {
+    "Varmetilførsel v1.2" : {
 
     },
     "Velg prosesser, k-faktor og standarder." : {

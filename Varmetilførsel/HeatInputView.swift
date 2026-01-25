@@ -3,13 +3,31 @@
 //  Varmetilførsel
 //
 //  Created by Frode Halrynjo on 18/01/2026.
+//  Updated with Smart Fields Logic
 //
 
 import SwiftUI
 import SwiftData
 import Combine
 
-// --- 1. SVEISEPROSESS MODELL ---
+// --- 0. DATA FIELD DEFINITIONS (NY) ---
+// Dette enumet styrer hvilke felter som finnes
+enum WeldField: String, CaseIterable, Identifiable {
+    case passType = "Pass Type"
+    case transfer = "Transfer Mode"
+    case filler = "Filler Material"
+    case diameter = "Diameter"
+    case polarity = "Polarity"
+    case wfs = "Wire Feed Speed"
+    case gas = "Gas Type"
+    case flow = "Gas Flow"
+    case interpass = "Interpass Temp"
+    case calcSpeed = "Calc. Travel Speed"
+    
+    var id: String { rawValue }
+}
+
+// --- 1. SVEISEPROSESS MODELL (OPPDATERT) ---
 struct WeldingProcess: Identifiable, Hashable {
     let id = UUID()
     let name: String
@@ -18,20 +36,31 @@ struct WeldingProcess: Identifiable, Hashable {
     let kFactor: Double
     let defaultVoltage: String
     let defaultAmperage: String
+    let relevantFields: Set<WeldField> // NY: Hvilke felter skal vises?
+    
+    // Hjelpesett for logikk
+    static let allFields: Set<WeldField> = Set(WeldField.allCases)
+    
+    // MMA/SAW: Ingen gass, ingen WFS
+    static let solidProcessFields: Set<WeldField> = [.passType, .filler, .diameter, .polarity, .interpass, .calcSpeed]
+    // TIG/PAW: Gass, men ingen WFS/Transfer
+    static let tigFields: Set<WeldField> = [.passType, .filler, .diameter, .polarity, .gas, .flow, .interpass, .calcSpeed]
+    // MIG/MAG/FCAW: Alt
+    static let wireProcessFields: Set<WeldField> = allFields
     
     static let allProcesses: [WeldingProcess] = [
-        WeldingProcess(name: "Arc energy", code: "Arc", awsCode: "-", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0"),
-        WeldingProcess(name: "Submerged arc welding", code: "121", awsCode: "SAW", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500"),
-        WeldingProcess(name: "MMA / Covered electrode", code: "111", awsCode: "SMAW", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120"),
-        WeldingProcess(name: "MIG welding", code: "131", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "MAG welding", code: "135", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200"),
-        WeldingProcess(name: "FCAW No Gas", code: "114", awsCode: "FCAW-S", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "180"),
-        WeldingProcess(name: "FCAW Active Gas", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220"),
-        WeldingProcess(name: "FCAW Inert Gas", code: "137", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220"),
-        WeldingProcess(name: "MCAW Active Gas", code: "138", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240"),
-        WeldingProcess(name: "MCAW Inert Gas", code: "139", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240"),
-        WeldingProcess(name: "TIG welding", code: "141", awsCode: "GTAW", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110"),
-        WeldingProcess(name: "Plasma arc welding", code: "15", awsCode: "PAW", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150")
+        WeldingProcess(name: "Arc energy", code: "Arc", awsCode: "-", kFactor: 1.0, defaultVoltage: "0.0", defaultAmperage: "0", relevantFields: allFields),
+        WeldingProcess(name: "Submerged arc welding", code: "121", awsCode: "SAW", kFactor: 1.0, defaultVoltage: "30.0", defaultAmperage: "500", relevantFields: [.passType, .filler, .diameter, .polarity, .wfs, .interpass, .calcSpeed]),
+        WeldingProcess(name: "MMA / Covered electrode", code: "111", awsCode: "SMAW", kFactor: 0.8, defaultVoltage: "23.0", defaultAmperage: "120", relevantFields: solidProcessFields),
+        WeldingProcess(name: "MIG welding", code: "131", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
+        WeldingProcess(name: "MAG welding", code: "135", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
+        WeldingProcess(name: "FCAW No Gas", code: "114", awsCode: "FCAW-S", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "180", relevantFields: [.passType, .transfer, .filler, .diameter, .polarity, .wfs, .interpass, .calcSpeed]),
+        WeldingProcess(name: "FCAW Active Gas", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
+        WeldingProcess(name: "FCAW Inert Gas", code: "137", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
+        WeldingProcess(name: "MCAW Active Gas", code: "138", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
+        WeldingProcess(name: "MCAW Inert Gas", code: "139", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
+        WeldingProcess(name: "TIG welding", code: "141", awsCode: "GTAW", kFactor: 0.6, defaultVoltage: "14.0", defaultAmperage: "110", relevantFields: tigFields),
+        WeldingProcess(name: "Plasma arc welding", code: "15", awsCode: "PAW", kFactor: 0.6, defaultVoltage: "25.0", defaultAmperage: "150", relevantFields: tigFields)
     ]
 }
 
@@ -47,12 +76,10 @@ struct HeatInputView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    // OPPDATERT: Lagt til .gasFlow
     enum InputTarget: String, Identifiable {
         case voltage, amperage, time, length
         case diameter, wfs
-        case interpass
-        case gasFlow // <--- NY
+        case interpass, gasFlow
         var id: String { rawValue }
     }
     
@@ -74,18 +101,20 @@ struct HeatInputView: View {
     @AppStorage("heat_efficiency") private var efficiency: Double = 0.8
     @AppStorage("heat_pass_counter") private var passCounter: Int = 1
     @AppStorage("heat_active_job_id") private var storedJobID: String = ""
+    
+    // VISIBILITY SETTINGS (NYE)
     @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
+    @AppStorage("use_process_field_defaults") private var useProcessDefaults: Bool = true
+    @AppStorage("user_custom_fields_string") private var userCustomFieldsString: String = WeldField.allCases.map { $0.rawValue }.joined(separator: ",")
     
     // STORAGE FOR UTVIDET DATA
-    // Husker disse mellom sveiser
     @AppStorage("heat_gas_type") private var extGasType: String = ""
-    @AppStorage("heat_transfer_mode") private var extTransferMode: String = "Short" // NY
-    @AppStorage("heat_filler_mat") private var extFillerMaterial: String = "" // NY
+    @AppStorage("heat_transfer_mode") private var extTransferMode: String = "Short"
+    @AppStorage("heat_filler_mat") private var extFillerMaterial: String = ""
     
-    // Nullstilles (State)
     @State private var extActualInterpass: Double = 0.0
     @State private var extPassType: String = "Fill"
-    @State private var extGasFlow: Double = 0.0 // NY
+    @State private var extGasFlow: Double = 0.0
     
     @State private var currentJobName: String = ""
     
@@ -94,8 +123,9 @@ struct HeatInputView: View {
     @AppStorage("stopwatch_start_timestamp") private var timerStartTimestamp: Double = 0.0
     @AppStorage("stopwatch_accumulated_time") private var timerAccumulatedTime: Double = 0.0
     
-    // --- FELTER FOR EXTENDED DATA ---
+    // UI STATES
     @State private var showExtendedDrawer = false
+
     @State private var extDiameter: Double = 0.0
     @State private var extPolarity: String = "DC+"
     @State private var extWireFeed: Double = 0.0
@@ -110,13 +140,21 @@ struct HeatInputView: View {
     
     var availableProcesses: [WeldingProcess] {
         let hidden = hiddenProcessCodes.split(separator: ",").map { String($0) }
-        return WeldingProcess.allProcesses.filter { process in
-            !hidden.contains(process.code)
-        }
+        return WeldingProcess.allProcesses.filter { process in !hidden.contains(process.code) }
     }
     
     var currentProcess: WeldingProcess {
         WeldingProcess.allProcesses.first(where: { $0.name == selectedProcessName }) ?? WeldingProcess.allProcesses.first!
+    }
+    
+    // --- LOGIKK FOR VISNING AV FELTER (NY) ---
+    var visibleFields: Set<WeldField> {
+        if useProcessDefaults {
+            return currentProcess.relevantFields
+        } else {
+            let rawValues = userCustomFieldsString.split(separator: ",").map { String($0) }
+            return Set(rawValues.compactMap { WeldField(rawValue: $0) })
+        }
     }
     
     var heatInput: Double {
@@ -140,16 +178,14 @@ struct HeatInputView: View {
                 if focusedField != nil {
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation { focusedField = nil }
-                        }
+                        .onTapGesture { withAnimation { focusedField = nil } }
                         .zIndex(1)
                 }
                 
                 ZStack {
                     VStack(spacing: 0) {
                         
-                        // --- HEADER ---
+                        // HEADER (Uendret)
                         Group {
                             HStack {
                                 Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){ showSettings = true } }){
@@ -161,8 +197,7 @@ struct HeatInputView: View {
                                     .foregroundColor(RetroTheme.primary)
                                 Spacer()
                                 Color.clear.frame(width: 40, height: 40)
-                            }
-                            .padding()
+                            }.padding()
                             
                             VStack(spacing: 25) {
                                 HStack(alignment: .top, spacing: 0) {
@@ -179,11 +214,9 @@ struct HeatInputView: View {
                                     }.frame(minWidth: 160, alignment: .trailing)
                                 }.padding(.horizontal)
                             }
-                        }
-                        .zIndex(10)
+                        }.zIndex(10)
                         
-                        
-                        // --- INPUT BOKS ---
+                        // INPUT BOKS (Uendret)
                         ZStack {
                             RoundedRectangle(cornerRadius: 10).fill(isNamingJob ? Color.green.opacity(0.15) : Color.black.opacity(0.2)).stroke(isNamingJob ? Color.green : RetroTheme.dim, lineWidth: isNamingJob ? 2 : 1)
                             
@@ -202,15 +235,11 @@ struct HeatInputView: View {
                                         if currentProcess.code != "Arc" {
                                             VStack(spacing: 0) {
                                                 Text("k-factor").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                                                Text(String(format: "%.1f", extIsArcEnergy ? 1.0 : efficiency))
-                                                    .font(RetroTheme.font(size: 20, weight: .bold))
-                                                    .foregroundColor(RetroTheme.primary)
-                                                    .padding(8)
+                                                Text(String(format: "%.1f", extIsArcEnergy ? 1.0 : efficiency)).font(RetroTheme.font(size: 20, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8)
                                                 Text(extIsArcEnergy ? "No k-factor" : "ISO 17671").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                                             }
                                             Text("×").font(RetroTheme.font(size: 20)).foregroundColor(RetroTheme.dim)
                                         }
-                                        
                                         VStack(spacing: 4) {
                                             HStack(alignment: .bottom, spacing: 6) {
                                                 SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
@@ -233,117 +262,41 @@ struct HeatInputView: View {
                         }
                         .padding(.horizontal).frame(height: 180).padding(.top, 25)
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            if focusedField != nil {
-                                withAnimation { focusedField = nil }
-                            }
-                        }
+                        .onTapGesture { if focusedField != nil { withAnimation { focusedField = nil } } }
                         .zIndex(5)
                         
-                        
-                        // --- BUNNEN ---
+                        // KNAPPER (Uendret)
                         Group {
                             HStack(spacing: 15) {
-                                // NEW JOB
-                                Button(action: {
-                                    if activeJobID != nil {
-                                        tempJobName = currentJobName
-                                        withAnimation {
-                                            isNamingJob = true
-                                            isJobNameFocused = true
-                                        }
-                                    } else {
-                                        startNewSession()
-                                    }
-                                }) {
-                                    VStack(spacing: 2) {
-                                        Text("NEW JOB")
-                                            .font(RetroTheme.font(size: 12, weight: .bold))
-                                        Text(activeJobID != nil ? "FINISH" : "RESET")
-                                            .font(RetroTheme.font(size: 8))
-                                    }
-                                    .foregroundColor(RetroTheme.primary)
-                                    .frame(width: 80, height: 50)
-                                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                                }
-                                
-                                // LOG PASS
-                                Button(action: logPass) {
-                                    HStack {
-                                        HStack(spacing: 4) {
-                                            Text("LOG PASS")
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.8)
-                                                .layoutPriority(0)
-                                            Text("#\(passCounter)")
-                                                .layoutPriority(1)
-                                        }
-                                        .font(RetroTheme.font(size: 20, weight: .heavy))
-                                        Spacer()
-                                        Image(systemName: "arrow.right.to.line")
-                                    }
-                                    .padding()
-                                    .foregroundColor(.black)
-                                    .background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim)
-                                }
-                                .disabled(heatInput == 0 || isNamingJob)
-                                
-                                // DATA+
+                                Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) { VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                                Button(action: logPass) { HStack { HStack(spacing: 4) { Text("LOG PASS").lineLimit(1).minimumScaleFactor(0.8).layoutPriority(0); Text("#\(passCounter)").layoutPriority(1) }.font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim) }.disabled(heatInput == 0 || isNamingJob)
                                 if enableExtendedData {
-                                    Button(action: {
-                                        showExtendedDrawer = true
-                                    }) {
-                                        VStack(spacing: 2) {
-                                            Image(systemName: "pencil.and.list.clipboard")
-                                                .font(RetroTheme.font(size: 16, weight: .bold))
-                                            Text("DATA+")
-                                                .font(RetroTheme.font(size: 8))
-                                        }
-                                        .foregroundColor(RetroTheme.primary)
-                                        .frame(width: 60, height: 50)
-                                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                                    }
-                                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                                    Button(action: { showExtendedDrawer = true }) { VStack(spacing: 2) { Image(systemName: "pencil.and.list.clipboard").font(RetroTheme.font(size: 16, weight: .bold)); Text("DATA+").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 60, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }.transition(.move(edge: .trailing).combined(with: .opacity))
                                 }
                             }.padding(.horizontal).padding(.top, 25)
                             
                             ScrollView {
                                 VStack(alignment: .leading, spacing: 15) {
-                                    if jobHistory.isEmpty {
-                                        RetroGuideView(isDetailed: false).frame(maxWidth: .infinity, alignment: .leading)
-                                    } else {
-                                        Text("> JOB HISTORY").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 10)
-                                        LazyVStack(spacing: 12) {
-                                            ForEach(jobHistory) { job in
-                                                NavigationLink(destination: JobDetailView(job: job)) {
-                                                    RetroJobRow(job: job, isActive: job.id == activeJobID)
-                                                }
-                                                .buttonStyle(PlainButtonStyle())
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal)
-                                .padding(.bottom, focusedField != nil ? 320 : 20)
-                                .animation(.easeOut(duration: 0.3), value: focusedField != nil)
+                                    if jobHistory.isEmpty { RetroGuideView(isDetailed: false).frame(maxWidth: .infinity, alignment: .leading) }
+                                    else { Text("> JOB HISTORY").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 10); LazyVStack(spacing: 12) { ForEach(jobHistory) { job in NavigationLink(destination: JobDetailView(job: job)) { RetroJobRow(job: job, isActive: job.id == activeJobID) }.buttonStyle(PlainButtonStyle()) } } }
+                                }.padding(.horizontal).padding(.bottom, focusedField != nil ? 320 : 20).animation(.easeOut(duration: 0.3), value: focusedField != nil)
                             }
-                        }
-                        .zIndex(5)
+                        }.zIndex(5)
                         
                     }.frame(height: geometry.size.height)
                 }
-                .offset(x: showSettings ? 300 : 0)
-                .opacity(showSettings ? 0 : 1)
-                .zIndex(2)
+                .offset(x: showSettings ? 300 : 0).opacity(showSettings ? 0 : 1).zIndex(2)
                 
-                // SETTINGS VIEW
+                // SETTINGS VIEW (Koblet til ny logikk)
                 if showSettings {
-                    SettingsView(showSettings: $showSettings)
-                        .transition(.move(edge: .leading))
-                        .zIndex(3)
+                    SettingsView(
+                        showSettings: $showSettings,
+                        useDefaults: $useProcessDefaults,
+                    )
+                    .transition(.move(edge: .leading)).zIndex(3)
                 }
 
-                // DATA+ DRAWER (Oppdatert)
+                // DATA+ DRAWER (Oppdatert til ny ExtendedInputView)
                 RetroModalDrawer(isPresented: $showExtendedDrawer, title: "DATA +", fromTop: true) {
                     ExtendedInputView(
                         process: Binding(get: { currentProcess }, set: { selectProcess($0) }),
@@ -354,102 +307,41 @@ struct HeatInputView: View {
                         actualInterpass: $extActualInterpass,
                         gasType: $extGasType,
                         passType: $extPassType,
-                        // NYE BINDINGS
                         gasFlow: $extGasFlow,
                         transferMode: $extTransferMode,
                         fillerMaterial: $extFillerMaterial,
-                        
                         calculatedTravelSpeed: calculatedSpeed,
-                        focusedField: $focusedField
+                        focusedField: $focusedField,
+                        visibleFields: visibleFields // SENDER MED LOGIKKEN HER
                     )
-                }
-                .zIndex(200)
+                }.zIndex(200)
+                
                 
                 // UNIFIED DRAWER
                 if let target = focusedField {
-                    VStack {
-                        Spacer()
-                        UnifiedInputDrawer(target: target, value: binding(for: target), range: range(for: target), step: step(for: target), isRecording: $isTimerRunning, onReset: resetStopwatch, onToggle: toggleStopwatch, onSync: { newValue in timerAccumulatedTime = newValue }).padding(.bottom, 50)
-                    }.id("DrawerContainer").transition(.move(edge: .bottom))
-                    .zIndex(300)
+                    VStack { Spacer(); UnifiedInputDrawer(target: target, value: binding(for: target), range: range(for: target), step: step(for: target), isRecording: $isTimerRunning, onReset: resetStopwatch, onToggle: toggleStopwatch, onSync: { newValue in timerAccumulatedTime = newValue }).padding(.bottom, 50) }.id("DrawerContainer").transition(.move(edge: .bottom)).zIndex(300)
                 }
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .navigationBarBackButtonHidden(true)
-        .onAppear { restoreActiveJob() }
-        .crtScreen()
-        .onReceive(uiUpdateTimer) { _ in
-            if isTimerRunning {
-                let total = timerAccumulatedTime + (Date().timeIntervalSince1970 - timerStartTimestamp)
-                if total >= 999 {
-                    timeStr = "999"
-                    isTimerRunning = false
-                    Haptics.play(.heavy)
-                } else {
-                    timeStr = String(format: "%.0f", total)
-                }
-            }
-        }
-        .onChange(of: enableExtendedData) { _, newValue in
-            if !newValue {
-                withAnimation { extIsArcEnergy = false }
-            }
-        }
+        .ignoresSafeArea(.keyboard, edges: .bottom).navigationBarBackButtonHidden(true).onAppear { restoreActiveJob() }.crtScreen()
+        .onReceive(uiUpdateTimer) { _ in if isTimerRunning { let total = timerAccumulatedTime + (Date().timeIntervalSince1970 - timerStartTimestamp); timeStr = total >= 999 ? "999" : String(format: "%.0f", total) } }
+        .onChange(of: enableExtendedData) { _, newValue in if !newValue { withAnimation { extIsArcEnergy = false } } }
     }
     
-    // --- HJELPEFUNKSJONER ---
-    func toggleStopwatch() {
-        if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); isTimerRunning = false; Haptics.play(.medium) }
-        else { timerStartTimestamp = Date().timeIntervalSince1970; isTimerRunning = true; Haptics.play(.heavy) }
-    }
+    // HELPERS
+    func toggleStopwatch() { if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); isTimerRunning = false; Haptics.play(.medium) } else { timerStartTimestamp = Date().timeIntervalSince1970; isTimerRunning = true; Haptics.play(.heavy) } }
     func resetStopwatch() { isTimerRunning = false; timerAccumulatedTime = 0; timerStartTimestamp = 0; timeStr = "0"; Haptics.play(.medium) }
     
     func logPass() {
         if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); timeStr = String(format: "%.0f", timerAccumulatedTime); isTimerRunning = false }
-        
-        let job: WeldGroup
-        if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) { job = existingJob }
-        else { job = WeldGroup(name: currentJobName.isEmpty ? "Job \(Date().formatted(.dateTime.day().month().hour().minute()))" : currentJobName); modelContext.insert(job); activeJobID = job.id }
-        
-        // Lagre også utregnet hastighet
+        let job: WeldGroup; if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) { job = existingJob } else { job = WeldGroup(name: currentJobName.isEmpty ? "Job \(Date().formatted(.dateTime.day().month().hour().minute()))" : currentJobName); modelContext.insert(job); activeJobID = job.id }
         let calculatedSpeedToSave = calculatedSpeed > 0 ? calculatedSpeed : nil
-        
-        let newPass = SavedCalculation(
-            name: "Pass #\(passCounter)",
-            voltage: voltageStr.toDouble,
-            amperage: amperageStr.toDouble,
-            travelTime: timeStr.toDouble,
-            weldLength: lengthStr.toDouble,
-            heatInput: heatInput,
-            processName: selectedProcessName,
-            kFactorUsed: extIsArcEnergy ? 1.0 : efficiency,
-            fillerDiameter: enableExtendedData ? extDiameter : nil,
-            polarity: enableExtendedData ? extPolarity : nil,
-            wireFeedSpeed: enableExtendedData ? extWireFeed : nil,
-            isArcEnergy: enableExtendedData ? extIsArcEnergy : false,
-            actualInterpass: enableExtendedData ? extActualInterpass : nil,
-            gasType: enableExtendedData ? extGasType : nil,
-            passType: enableExtendedData ? extPassType : nil,
-            // NYE
-            gasFlow: enableExtendedData ? extGasFlow : nil,
-            transferMode: enableExtendedData ? extTransferMode : nil,
-            fillerMaterial: enableExtendedData ? extFillerMaterial : nil,
-            savedTravelSpeed: enableExtendedData ? calculatedSpeedToSave : nil
-        )
-        
-        newPass.group = job; passCounter += 1; job.date = Date(); try? modelContext.save(); UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        resetStopwatch()
+        let newPass = SavedCalculation(name: "Pass #\(passCounter)", voltage: voltageStr.toDouble, amperage: amperageStr.toDouble, travelTime: timeStr.toDouble, weldLength: lengthStr.toDouble, heatInput: heatInput, processName: selectedProcessName, kFactorUsed: extIsArcEnergy ? 1.0 : efficiency, fillerDiameter: enableExtendedData ? extDiameter : nil, polarity: enableExtendedData ? extPolarity : nil, wireFeedSpeed: enableExtendedData ? extWireFeed : nil, isArcEnergy: enableExtendedData ? extIsArcEnergy : false, actualInterpass: enableExtendedData ? extActualInterpass : nil, gasType: enableExtendedData ? extGasType : nil, passType: enableExtendedData ? extPassType : nil, gasFlow: enableExtendedData ? extGasFlow : nil, transferMode: enableExtendedData ? extTransferMode : nil, fillerMaterial: enableExtendedData ? extFillerMaterial : nil, savedTravelSpeed: enableExtendedData ? calculatedSpeedToSave : nil)
+        newPass.group = job; passCounter += 1; job.date = Date(); try? modelContext.save(); UIImpactFeedbackGenerator(style: .heavy).impactOccurred(); resetStopwatch()
     }
     
     @ViewBuilder func SelectableInput(label: String, value: Double, target: InputTarget, currentFocus: InputTarget?, precision: Int, action: @escaping () -> Void) -> some View {
-        let isSelected = (currentFocus == target)
-        Button(action: { withAnimation(.spring(response: 0.3)) { action(); Haptics.selection() } }) {
-            VStack(spacing: 0) {
-                Text(String(format: "%.\(precision)f", value)).font(RetroTheme.font(size: 24, weight: .bold)).foregroundColor(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary).padding(.vertical, 4).frame(minWidth: 80).background(Color.black).overlay(Rectangle().stroke(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary, lineWidth: isSelected ? 2 : 1))
-                Text(label).font(RetroTheme.font(size: 10, weight: isSelected ? .bold : .regular)).foregroundColor(isSelected ? RetroTheme.primary : RetroTheme.dim).padding(4).frame(minWidth: 80)
-            }
-        }.buttonStyle(PlainButtonStyle())
+        let isSelected = (currentFocus == target); Button(action: { withAnimation(.spring(response: 0.3)) { action(); Haptics.selection() } }) { VStack(spacing: 0) { Text(String(format: "%.\(precision)f", value)).font(RetroTheme.font(size: 24, weight: .bold)).foregroundColor(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary).padding(.vertical, 4).frame(minWidth: 80).background(Color.black).overlay(Rectangle().stroke(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary, lineWidth: isSelected ? 2 : 1)); Text(label).font(RetroTheme.font(size: 10, weight: isSelected ? .bold : .regular)).foregroundColor(isSelected ? RetroTheme.primary : RetroTheme.dim).padding(4).frame(minWidth: 80) } }.buttonStyle(PlainButtonStyle())
     }
     
     func binding(for field: InputTarget) -> Binding<Double> {
@@ -461,49 +353,23 @@ struct HeatInputView: View {
         case .diameter: return $extDiameter
         case .wfs: return $extWireFeed
         case .interpass: return $extActualInterpass
-        case .gasFlow: return $extGasFlow // NY
+        case .gasFlow: return $extGasFlow
         }
     }
     
     func range(for field: InputTarget) -> ClosedRange<Double> {
         switch field {
-        case .voltage: return 0...100
-        case .amperage: return 0...1000
-        case .time: return 0...3600
-        case .length: return 0...10000
-        case .diameter: return 0...6.0
-        case .wfs: return 0...30.0
-        case .interpass: return 0...500.0
-        case .gasFlow: return 0...50.0 // NY
+        case .voltage: return 0...100; case .amperage: return 0...1000; case .time: return 0...3600; case .length: return 0...10000; case .diameter: return 0...6.0; case .wfs: return 0...30.0; case .interpass: return 0...500.0; case .gasFlow: return 0...50.0
         }
     }
     
     func step(for field: InputTarget) -> Double {
-        switch field {
-        case .voltage: return 0.1
-        case .diameter: return 0.1
-        case .wfs: return 0.1
-        default: return 1.0 // Flow, Interpass, Ampere, Tid, Lengde = 1.0
-        }
+        switch field { case .voltage: return 0.1; case .diameter: return 0.1; case .wfs: return 0.1; default: return 1.0 }
     }
     
-    func selectProcess(_ p: WeldingProcess) {
-        selectedProcessName = p.name;
-        efficiency = p.kFactor;
-        voltageStr = p.defaultVoltage;
-        amperageStr = p.defaultAmperage;
-        if p.code == "Arc" { extIsArcEnergy = true } else { extIsArcEnergy = false }
-        Haptics.selection()
-    }
+    func selectProcess(_ p: WeldingProcess) { selectedProcessName = p.name; efficiency = p.kFactor; voltageStr = p.defaultVoltage; amperageStr = p.defaultAmperage; if p.code == "Arc" { extIsArcEnergy = true } else { extIsArcEnergy = false }; Haptics.selection() }
     func restoreActiveJob() { if let id = activeJobID, let j = jobHistory.first(where: { $0.id == id }) { currentJobName = j.name; passCounter = j.passes.count + 1 } else { activeJobID = nil; passCounter = 1 } }
-    
-    func startNewSession() {
-        activeJobID = nil; passCounter = 1; currentJobName = "";
-        extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false;
-        extActualInterpass = 0.0; extPassType = "Fill"; extGasFlow = 0.0;
-        // Beholder Gass Type, Filler Mat og Transfer Mode (AppStorage)
-        Haptics.play(.medium)
-    }
+    func startNewSession() { activeJobID = nil; passCounter = 1; currentJobName = ""; extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false; extActualInterpass = 0.0; extPassType = "Fill"; extGasFlow = 0.0; Haptics.play(.medium) }
     func finalizeAndSaveJob() { withAnimation { isNamingJob = false }; startNewSession(); UINotificationFeedbackGenerator().notificationOccurred(.success) }
 }
 
@@ -548,7 +414,7 @@ struct RetroJobRow: View {
     let job: WeldGroup; let isActive: Bool; var body: some View { HStack { VStack(alignment: .leading, spacing: 4) { HStack(spacing: 8) { Text(job.name).font(RetroTheme.font(size: 16, weight: .bold)).foregroundColor(isActive ? Color.green : RetroTheme.primary); if isActive { Text("ACTIVE JOB").font(RetroTheme.font(size: 8, weight: .heavy)).foregroundColor(.black).padding(.horizontal, 4).padding(.vertical, 2).background(Color.green) } }; Text("\(job.passes.count) passes").font(RetroTheme.font(size: 10)).foregroundColor(isActive ? Color.green.opacity(0.8) : RetroTheme.dim) }; Spacer(); Text(job.date, format: .dateTime.day().month()).font(RetroTheme.font(size: 12)).foregroundColor(isActive ? Color.green.opacity(0.8) : RetroTheme.dim); if isActive { Image(systemName: "record.circle").font(.system(size: 10)).foregroundColor(.green).blinkEffect() } }.padding(12).background(isActive ? Color.green.opacity(0.15) : Color.black.opacity(0.3)).overlay(Rectangle().stroke(isActive ? Color.green : RetroTheme.dim.opacity(0.5), lineWidth: isActive ? 2 : 1)).shadow(color: isActive ? Color.green.opacity(0.4) : .clear, radius: 8, x: 0, y: 0) }
 }
 
-// --- 5. EXTENDED INPUT VIEW (OPPDATERT) ---
+// --- 5. EXTENDED INPUT VIEW (HELT NY LAYOUT - GRID) ---
 struct ExtendedInputView: View {
     @Binding var process: WeldingProcess
     @Binding var diameter: Double
@@ -558,129 +424,117 @@ struct ExtendedInputView: View {
     @Binding var actualInterpass: Double
     @Binding var gasType: String
     @Binding var passType: String
-    
-    // NYE BINDINGS
     @Binding var gasFlow: Double
     @Binding var transferMode: String
     @Binding var fillerMaterial: String
-    
     let calculatedTravelSpeed: Double
     @Binding var focusedField: HeatInputView.InputTarget?
+    
+    // VISIBILITY SET
+    let visibleFields: Set<WeldField>
     
     let passTypes = ["Root", "Fill", "Cap", "-"]
     let transferModes = ["Short", "Spray", "Pulse", "Globular", "CMT", "-"]
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 15) {
             
-            // RAD 1: PROSESS + TRANSFER + TYPE
-            HStack(spacing: 12) {
-                // Prosess
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PROSESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    Text(process.name.prefix(8) + (process.name.count > 8 ? "." : "")).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).lineLimit(1)
-                }.frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Transfer Mode (Menu)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TRANSFER").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    Menu {
-                        ForEach(transferModes, id: \.self) { mode in
-                            Button(mode) { transferMode = mode }
-                        }
-                    } label: {
-                        HStack {
-                            Text(transferMode).font(RetroTheme.font(size: 12, weight: .bold))
-                            Spacer()
-                            Image(systemName: "chevron.down").font(.system(size: 8))
-                        }
-                        .foregroundColor(RetroTheme.primary)
-                        .padding(8)
-                        .frame(height: 30)
-                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                    }
-                }.frame(width: 90)
-
-                // Pass Type (Segmented)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    HStack(spacing: 0) {
-                        ForEach(passTypes, id: \.self) { type in
-                            Button(action: { passType = type }) {
-                                Text(type.prefix(1)).font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(passType == type ? .black : RetroTheme.primary).frame(height: 30).frame(maxWidth: .infinity).background(passType == type ? RetroTheme.primary : Color.black)
-                            }.buttonStyle(.plain)
-                            if type != passTypes.last { Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 30) }
-                        }
-                    }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                }.frame(width: 100)
-            }
+            // Topp: Prosessnavn
+            VStack(alignment: .leading, spacing: 4) {
+                Text("PROSESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                Text(process.name).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).lineLimit(1)
+            }.frame(maxWidth: .infinity, alignment: .leading)
             
             Divider().background(RetroTheme.dim)
             
-            // RAD 2: FILLER + DIA + POLARITET
-            HStack(spacing: 12) {
-                // Filler Material
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("FILLER METAL").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    TextField("Ex: 316L", text: $fillerMaterial)
-                        .font(RetroTheme.font(size: 14, weight: .bold))
-                        .foregroundColor(RetroTheme.primary)
-                        .padding(.horizontal, 8)
-                        .frame(height: 44)
-                        .background(Color.black)
-                        .overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+            // GRID LAYOUT (2 Kolonner)
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                
+                // 1. Pass Type (Segmented)
+                if visibleFields.contains(.passType) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        HStack(spacing: 0) {
+                            ForEach(passTypes, id: \.self) { type in
+                                Button(action: { passType = type }) { Text(type.prefix(1)).font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(passType == type ? .black : RetroTheme.primary).frame(height: 44).frame(maxWidth: .infinity).background(passType == type ? RetroTheme.primary : Color.black) }.buttonStyle(.plain)
+                                if type != passTypes.last { Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 44) }
+                            }
+                        }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                    }
                 }
                 
-                // Diameter
-                RetroInputBlock(label: "DIAMETER", unit: "mm", value: diameter, isActive: focusedField == .diameter) { withAnimation { focusedField = .diameter } }.frame(width: 80)
-                
-                // Polaritet
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("POLARITET").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    HStack(spacing: 0) {
-                        ForEach(["DC+", "DC-", "AC"], id: \.self) { pol in
-                            Button(action: { polarity = pol }) { Text(pol).font(RetroTheme.font(size: 9, weight: .bold)).foregroundColor(polarity == pol ? .black : RetroTheme.primary).frame(height: 44).frame(maxWidth: .infinity).background(polarity == pol ? RetroTheme.primary : Color.black) }.buttonStyle(.plain)
-                            if pol != "AC" { Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 44) }
-                        }
-                    }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                }.frame(width: 100)
-            }
-            
-            // RAD 3: GASS + FLOW + INTERPASS
-            HStack(spacing: 12) {
-                // Gass Type
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    TextField("Ex: Mison 18", text: $gasType)
-                        .font(RetroTheme.font(size: 14, weight: .bold))
-                        .foregroundColor(RetroTheme.primary)
-                        .padding(.horizontal, 8)
-                        .frame(height: 44)
-                        .background(Color.black)
-                        .overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+                // 2. Transfer Mode (Menu)
+                if visibleFields.contains(.transfer) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TRANSFER").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        Menu { ForEach(transferModes, id: \.self) { mode in Button(mode) { transferMode = mode } } } label: { HStack { Text(transferMode).font(RetroTheme.font(size: 12, weight: .bold)); Spacer(); Image(systemName: "chevron.down").font(.system(size: 8)) }.foregroundColor(RetroTheme.primary).padding(8).frame(height: 44).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                    }
                 }
                 
-                // Flow (NY)
-                RetroInputBlock(label: "FLOW", unit: "l/min", value: gasFlow, isActive: focusedField == .gasFlow) { withAnimation { focusedField = .gasFlow } }.frame(width: 70)
+                // 3. Filler Metal
+                if visibleFields.contains(.filler) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("FILLER METAL").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        TextField("Ex: 316L", text: $fillerMaterial).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.horizontal, 8).frame(height: 44).background(Color.black).overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+                    }
+                }
                 
-                // Interpass
-                RetroInputBlock(label: "INTERPASS", unit: "°C", value: actualInterpass, isActive: focusedField == .interpass) { withAnimation { focusedField = .interpass } }.frame(width: 80)
-            }
-            
-            // RAD 4: WFS + SPEED
-            HStack(spacing: 16) {
-                RetroInputBlock(label: "WFS", unit: "m/min", value: wireFeedSpeed, isActive: focusedField == .wfs) { withAnimation { focusedField = .wfs } }
+                // 4. Diameter
+                if visibleFields.contains(.diameter) {
+                    RetroInputBlock(label: "DIAMETER", unit: "mm", value: diameter, isActive: focusedField == .diameter) { withAnimation { focusedField = .diameter } }
+                }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("CALC. SPEED").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                    HStack { Text(String(format: "%.1f", calculatedTravelSpeed)).font(RetroTheme.font(size: 18, weight: .bold)).foregroundColor(RetroTheme.primary); Text("mm/min").font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim) }.frame(height: 44).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
+                // 5. Polarity
+                if visibleFields.contains(.polarity) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("POLARITET").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        HStack(spacing: 0) {
+                            ForEach(["DC+", "DC-", "AC"], id: \.self) { pol in
+                                Button(action: { polarity = pol }) { Text(pol).font(RetroTheme.font(size: 9, weight: .bold)).foregroundColor(polarity == pol ? .black : RetroTheme.primary).frame(height: 44).frame(maxWidth: .infinity).background(polarity == pol ? RetroTheme.primary : Color.black) }.buttonStyle(.plain)
+                                if pol != "AC" { Rectangle().fill(RetroTheme.primary).frame(width: 1, height: 44) }
+                            }
+                        }.overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                    }
+                }
+                
+                // 6. WFS
+                if visibleFields.contains(.wfs) {
+                    RetroInputBlock(label: "WFS", unit: "m/min", value: wireFeedSpeed, isActive: focusedField == .wfs) { withAnimation { focusedField = .wfs } }
+                }
+                
+                // 7. Gas Type
+                if visibleFields.contains(.gas) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        TextField("Ex: Mison 18", text: $gasType).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.horizontal, 8).frame(height: 44).background(Color.black).overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+                    }
+                }
+                
+                // 8. Gas Flow
+                if visibleFields.contains(.flow) {
+                    RetroInputBlock(label: "FLOW", unit: "l/min", value: gasFlow, isActive: focusedField == .gasFlow) { withAnimation { focusedField = .gasFlow } }
+                }
+                
+                // 9. Interpass
+                if visibleFields.contains(.interpass) {
+                    RetroInputBlock(label: "INTERPASS", unit: "°C", value: actualInterpass, isActive: focusedField == .interpass) { withAnimation { focusedField = .interpass } }
+                }
+                
+                // 10. Calc Speed (Viser alltid? Eller basert på settings?)
+                if visibleFields.contains(.calcSpeed) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("CALC. SPEED").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        HStack { Text(String(format: "%.1f", calculatedTravelSpeed)).font(RetroTheme.font(size: 18, weight: .bold)).foregroundColor(RetroTheme.primary); Text("mm/min").font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim) }.frame(height: 44).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 10).overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
+                    }
                 }
             }
         }.padding(.top, 10)
     }
 }
 
-// Hjelpeblokk
+// --- 6. FIELD CUSTOMIZER VIEW (Ny Skuff) ---
+
+// --- HJELPEBLOKKER (Uendret) ---
 struct RetroInputBlock: View {
     let label: String; let unit: String; var value: Double; var isActive: Bool; var onTap: () -> Void
     var body: some View { Button(action: onTap) { VStack(alignment: .leading, spacing: 4) { Text(label).font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim); HStack { Text(String(format: value < 10 && value.truncatingRemainder(dividingBy: 1) != 0 ? "%.1f" : "%.0f", value)).font(RetroTheme.font(size: 16, weight: .bold)).foregroundColor(isActive ? .black : RetroTheme.primary); Spacer(); Text(unit).font(RetroTheme.font(size: 10)).foregroundColor(isActive ? .black : RetroTheme.dim) }.frame(height: 44).padding(.horizontal, 8).background(isActive ? RetroTheme.primary : Color.clear).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) } }.buttonStyle(.plain) }
