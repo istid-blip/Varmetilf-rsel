@@ -55,7 +55,7 @@ struct WeldingProcess: Identifiable, Hashable {
         WeldingProcess(name: "MIG welding", code: "131", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
         WeldingProcess(name: "MAG welding", code: "135", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
         WeldingProcess(name: "FCAW No Gas", code: "114", awsCode: "FCAW-S", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "180", relevantFields: [.passType, .transfer, .filler, .diameter, .polarity, .wfs, .interpass, .calcSpeed]),
-        WeldingProcess(name: "FCAW Active Gas", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
+        WeldingProcess(name: "FCAW Active Gas fqwlehfqwkh", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
         WeldingProcess(name: "FCAW Inert Gas", code: "137", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
         WeldingProcess(name: "MCAW Active Gas", code: "138", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
         WeldingProcess(name: "MCAW Inert Gas", code: "139", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
@@ -205,6 +205,7 @@ struct HeatInputView: View {
                                         Text("PROCESS").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                                         RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "Arc" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
                                             .frame(maxWidth: .infinity)
+                                            .frame(height: 44)
                                     }
                                     Spacer(minLength: 20)
                                     VStack(alignment: .trailing, spacing: 1) {
