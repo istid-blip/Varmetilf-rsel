@@ -125,7 +125,7 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
                 // Vi setter en max bredde som er skjermbredde minus avstanden fra venstre side
                 .frame(width: isWidthExpanded ? nil : geo.size.width, alignment: .leading)
                 .frame(minWidth: geo.size.width)
-                .frame(maxWidth: UIScreen.main.bounds.width - geo.frame(in: .global).minX - 20, alignment: .leading)
+                .frame(maxWidth: UIScreen.main.bounds.width - geo.frame(in: .global).minX - 40, alignment: .leading)
                 .offset(y: geo.size.height + 5)
                 .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: 10)
             }
@@ -397,5 +397,31 @@ struct RetroModalDrawer<Content: View>: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
+    }
+}
+
+// --- STANDARD RETRO TOGGLE COMPONENT ---
+struct RetroToggle: View {
+    let title: LocalizedStringKey
+    @Binding var isOn: Bool
+    var isSubToggle: Bool = false // Nyhet: Kan gjøres mindre
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(RetroTheme.font(size: isSubToggle ? 14 : 18, weight: isSubToggle ? .bold : .bold)) // Litt mindre tekst hvis sub-toggle
+                .foregroundColor(RetroTheme.primary)
+
+            Spacer()
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 0).stroke(RetroTheme.primary, lineWidth: 1).background(Color.black.opacity(0.01)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32)
+                if isOn { RoundedRectangle(cornerRadius: 0).fill(RetroTheme.primary.opacity(0.1)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32) }
+                RoundedRectangle(cornerRadius: 0).fill(isOn ? RetroTheme.primary : RetroTheme.dim).frame(width: isSubToggle ? 16 : 24, height: isSubToggle ? 16 : 24).overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.black, lineWidth: 2).opacity(0.3)).shadow(color: isOn ? RetroTheme.primary.opacity(0.8) : .clear, radius: 8).offset(x: isOn ? (isSubToggle ? 8 : 13) : (isSubToggle ? -8 : -13))
+            }
+            .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) { isOn.toggle() } }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { isOn.toggle() } }
     }
 }

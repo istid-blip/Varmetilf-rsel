@@ -280,28 +280,4 @@ struct SettingsView: View {
     }
 }
 
-// --- STANDARD RETRO TOGGLE COMPONENT ---
-struct RetroToggle: View {
-    let title: LocalizedStringKey
-    @Binding var isOn: Bool
-    var isSubToggle: Bool = false // Nyhet: Kan gjøres mindre
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(RetroTheme.font(size: isSubToggle ? 14 : 18, weight: isSubToggle ? .bold : .bold)) // Litt mindre tekst hvis sub-toggle
-                .foregroundColor(RetroTheme.primary)
 
-            Spacer()
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 4).stroke(RetroTheme.primary, lineWidth: 2).background(Color.black.opacity(0.01)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32)
-                if isOn { RoundedRectangle(cornerRadius: 4).fill(RetroTheme.primary.opacity(0.2)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32) }
-                RoundedRectangle(cornerRadius: 2).fill(isOn ? RetroTheme.primary : RetroTheme.dim).frame(width: isSubToggle ? 16 : 24, height: isSubToggle ? 16 : 24).overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.black, lineWidth: 2).opacity(0.3)).shadow(color: isOn ? RetroTheme.primary.opacity(0.8) : .clear, radius: 5).offset(x: isOn ? (isSubToggle ? 8 : 13) : (isSubToggle ? -8 : -13))
-            }
-            .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) { isOn.toggle() } }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { isOn.toggle() } }
-    }
-}
