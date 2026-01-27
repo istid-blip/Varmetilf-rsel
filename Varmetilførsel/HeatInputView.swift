@@ -3,15 +3,14 @@
 //  Varmetilførsel
 //
 //  Created by Frode Halrynjo on 18/01/2026.
-//  Updated with Smart Fields Logic
+//  Updated with Resizable SelectableInput & Color Logic
 //
 
 import SwiftUI
 import SwiftData
 import Combine
 
-// --- 0. DATA FIELD DEFINITIONS (NY) ---
-// Dette enumet styrer hvilke felter som finnes
+// --- 0. DATA FIELD DEFINITIONS ---
 enum WeldField: String, CaseIterable, Identifiable {
     case passType = "Pass Type"
     case transfer = "Transfer Mode"
@@ -27,7 +26,7 @@ enum WeldField: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-// --- 1. SVEISEPROSESS MODELL (OPPDATERT) ---
+// --- 1. SVEISEPROSESS MODELL ---
 struct WeldingProcess: Identifiable, Hashable {
     let id = UUID()
     let name: String
@@ -36,16 +35,12 @@ struct WeldingProcess: Identifiable, Hashable {
     let kFactor: Double
     let defaultVoltage: String
     let defaultAmperage: String
-    let relevantFields: Set<WeldField> // NY: Hvilke felter skal vises?
+    let relevantFields: Set<WeldField>
     
-    // Hjelpesett for logikk
     static let allFields: Set<WeldField> = Set(WeldField.allCases)
     
-    // MMA/SAW: Ingen gass, ingen WFS
     static let solidProcessFields: Set<WeldField> = [.passType, .filler, .diameter, .polarity, .interpass, .calcSpeed]
-    // TIG/PAW: Gass, men ingen WFS/Transfer
     static let tigFields: Set<WeldField> = [.passType, .filler, .diameter, .polarity, .gas, .flow, .interpass, .calcSpeed]
-    // MIG/MAG/FCAW: Alt
     static let wireProcessFields: Set<WeldField> = allFields
     
     static let allProcesses: [WeldingProcess] = [
@@ -55,7 +50,7 @@ struct WeldingProcess: Identifiable, Hashable {
         WeldingProcess(name: "MIG welding", code: "131", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
         WeldingProcess(name: "MAG welding", code: "135", awsCode: "GMAW", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "200", relevantFields: wireProcessFields),
         WeldingProcess(name: "FCAW No Gas", code: "114", awsCode: "FCAW-S", kFactor: 0.8, defaultVoltage: "24.0", defaultAmperage: "180", relevantFields: [.passType, .transfer, .filler, .diameter, .polarity, .wfs, .interpass, .calcSpeed]),
-        WeldingProcess(name: "FCAW Active Gas fqwlehfqwkh", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
+        WeldingProcess(name: "FCAW Active Gas", code: "136", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
         WeldingProcess(name: "FCAW Inert Gas", code: "137", awsCode: "FCAW-G", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "220", relevantFields: wireProcessFields),
         WeldingProcess(name: "MCAW Active Gas", code: "138", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
         WeldingProcess(name: "MCAW Inert Gas", code: "139", awsCode: "GMAW-C", kFactor: 0.8, defaultVoltage: "25.0", defaultAmperage: "240", relevantFields: wireProcessFields),
@@ -102,7 +97,7 @@ struct HeatInputView: View {
     @AppStorage("heat_pass_counter") private var passCounter: Int = 1
     @AppStorage("heat_active_job_id") private var storedJobID: String = ""
     
-    // VISIBILITY SETTINGS (NYE)
+    // VISIBILITY SETTINGS
     @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
     @AppStorage("use_process_field_defaults") private var useProcessDefaults: Bool = true
     @AppStorage("user_custom_fields_string") private var userCustomFieldsString: String = WeldField.allCases.map { $0.rawValue }.joined(separator: ",")
@@ -147,7 +142,6 @@ struct HeatInputView: View {
         WeldingProcess.allProcesses.first(where: { $0.name == selectedProcessName }) ?? WeldingProcess.allProcesses.first!
     }
     
-    // --- LOGIKK FOR VISNING AV FELTER (NY) ---
     var visibleFields: Set<WeldField> {
         if useProcessDefaults {
             return currentProcess.relevantFields
@@ -185,7 +179,7 @@ struct HeatInputView: View {
                 ZStack {
                     VStack(spacing: 0) {
                         
-                        // HEADER (Uendret)
+                        // HEADER
                         Group {
                             HStack {
                                 Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){ showSettings = true } }){
@@ -217,7 +211,7 @@ struct HeatInputView: View {
                             }
                         }.zIndex(10)
                         
-                        // INPUT BOKS (Uendret)
+                        // INPUT BOKS (Formelfeltet)
                         ZStack {
                             RoundedRectangle(cornerRadius: 10).fill(isNamingJob ? Color.green.opacity(0.15) : Color.black.opacity(0.2)).stroke(isNamingJob ? Color.green : RetroTheme.dim, lineWidth: isNamingJob ? 2 : 1)
                             
@@ -243,15 +237,16 @@ struct HeatInputView: View {
                                         }
                                         VStack(spacing: 4) {
                                             HStack(alignment: .bottom, spacing: 6) {
-                                                SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, target: .voltage, currentFocus: focusedField, precision: 1) { focusedField = .voltage }
+                                                // MERK: Du kan sette width: 100 her hvis du vil ha fast bredde, ellers nil for full bredde
+                                                SelectableInput(label: "Voltage (V)", value: voltageStr.toDouble, isActive: focusedField == .voltage, isAnyFocused: focusedField != nil, precision: 1, width: 80) { focusedField = .voltage }
                                                 Text("×").foregroundColor(RetroTheme.dim)
-                                                SelectableInput(label: "Current (A)", value: amperageStr.toDouble, target: .amperage, currentFocus: focusedField, precision: 0) { focusedField = .amperage }
+                                                SelectableInput(label: "Current (A)", value: amperageStr.toDouble, isActive: focusedField == .amperage, isAnyFocused: focusedField != nil, precision: 0, width: 80) { focusedField = .amperage }
                                             }
                                             Rectangle().fill(RetroTheme.primary).frame(height: 2)
                                             HStack(alignment: .top, spacing: 4) {
-                                                SelectableInput(label: "Length (mm)", value: lengthStr.toDouble, target: .length, currentFocus: focusedField, precision: 0) { focusedField = .length }
+                                                SelectableInput(label: "Length (mm)", value: lengthStr.toDouble, isActive: focusedField == .length, isAnyFocused: focusedField != nil, precision: 0, width: 80) { focusedField = .length }
                                                 Text("/").font(RetroTheme.font(size: 16)).foregroundColor(RetroTheme.dim).padding(.top, 10)
-                                                SelectableInput(label: "time (s)", value: timeStr.toDouble, target: .time, currentFocus: focusedField, precision: 0) { focusedField = .time }
+                                                SelectableInput(label: "time (s)", value: timeStr.toDouble, isActive: focusedField == .time, isAnyFocused: focusedField != nil, precision: 0, width: 80) { focusedField = .time }
                                                 Text("×").foregroundColor(RetroTheme.dim).padding(.top, 10)
                                                 HStack(alignment: .top, spacing: 0) { Text("10").font(RetroTheme.font(size: 16, weight: .bold)); Text("3").font(RetroTheme.font(size: 10, weight: .bold)).baselineOffset(8) }.foregroundColor(RetroTheme.dim).padding(.top, 8)
                                             }
@@ -266,7 +261,7 @@ struct HeatInputView: View {
                         .onTapGesture { if focusedField != nil { withAnimation { focusedField = nil } } }
                         .zIndex(5)
                         
-                        // KNAPPER (Uendret)
+                        // KNAPPER
                         Group {
                             HStack(spacing: 15) {
                                 Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) { VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
@@ -288,35 +283,42 @@ struct HeatInputView: View {
                 }
                 .offset(x: showSettings ? 300 : 0).opacity(showSettings ? 0 : 1).zIndex(2)
                 
-                // SETTINGS VIEW (Koblet til ny logikk)
+                // SETTINGS VIEW
                 if showSettings {
                     SettingsView(
                         showSettings: $showSettings,
-                        useDefaults: $useProcessDefaults,
+                        useDefaults: $useProcessDefaults
                     )
                     .transition(.move(edge: .leading)).zIndex(3)
                 }
-
-                // DATA+ DRAWER (Oppdatert til ny ExtendedInputView)
-                RetroModalDrawer(isPresented: $showExtendedDrawer, title: "DATA +", fromTop: true) {
-                    ExtendedInputView(
-                        process: Binding(get: { currentProcess }, set: { selectProcess($0) }),
-                        diameter: $extDiameter,
-                        polarity: $extPolarity,
-                        wireFeedSpeed: $extWireFeed,
-                        isArcEnergy: $extIsArcEnergy,
-                        actualInterpass: $extActualInterpass,
-                        gasType: $extGasType,
-                        passType: $extPassType,
-                        gasFlow: $extGasFlow,
-                        transferMode: $extTransferMode,
-                        fillerMaterial: $extFillerMaterial,
-                        calculatedTravelSpeed: calculatedSpeed,
-                        focusedField: $focusedField,
-                        visibleFields: visibleFields // SENDER MED LOGIKKEN HER
-                    )
-                }.zIndex(200)
                 
+                // DATA+ DRAWER
+                RetroModalDrawer(
+                    isPresented: $showExtendedDrawer,
+                    title: "DATA +",
+                    fromTop: true,
+                    showHeader: false, // Skjuler header og lukkeknapp
+                    fixedHeight: geometry.size.height * 0.45 // Setter høyden til xx% av skjermen
+                ) {
+                    ScrollView { // Legger innholdet i ScrollView for sikkerhets skyld
+                        ExtendedInputView(
+                            process: Binding(get: { currentProcess }, set: { selectProcess($0) }),
+                            diameter: $extDiameter,
+                            polarity: $extPolarity,
+                            wireFeedSpeed: $extWireFeed,
+                            isArcEnergy: $extIsArcEnergy,
+                            actualInterpass: $extActualInterpass,
+                            gasType: $extGasType,
+                            passType: $extPassType,
+                            gasFlow: $extGasFlow,
+                            transferMode: $extTransferMode,
+                            fillerMaterial: $extFillerMaterial,
+                            calculatedTravelSpeed: calculatedSpeed,
+                            focusedField: $focusedField,
+                            visibleFields: visibleFields
+                        )
+                    }
+                }.zIndex(200)
                 
                 // UNIFIED DRAWER
                 if let target = focusedField {
@@ -327,7 +329,16 @@ struct HeatInputView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom).navigationBarBackButtonHidden(true).onAppear { restoreActiveJob() }.crtScreen()
         .onReceive(uiUpdateTimer) { _ in if isTimerRunning { let total = timerAccumulatedTime + (Date().timeIntervalSince1970 - timerStartTimestamp); timeStr = total >= 999 ? "999" : String(format: "%.0f", total) } }
         .onChange(of: enableExtendedData) { _, newValue in if !newValue { withAnimation { extIsArcEnergy = false } } }
+        // Lukk hjulet automatisk hvis Data+ skuffen lukkes
+        .onChange(of: showExtendedDrawer) { _, isOpen in
+            if !isOpen {
+                withAnimation {
+                    focusedField = nil
+                }
+            }
+        }
     }
+    
     
     // HELPERS
     func toggleStopwatch() { if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); isTimerRunning = false; Haptics.play(.medium) } else { timerStartTimestamp = Date().timeIntervalSince1970; isTimerRunning = true; Haptics.play(.heavy) } }
@@ -341,10 +352,7 @@ struct HeatInputView: View {
         newPass.group = job; passCounter += 1; job.date = Date(); try? modelContext.save(); UIImpactFeedbackGenerator(style: .heavy).impactOccurred(); resetStopwatch()
     }
     
-    @ViewBuilder func SelectableInput(label: String, value: Double, target: InputTarget, currentFocus: InputTarget?, precision: Int, action: @escaping () -> Void) -> some View {
-        let isSelected = (currentFocus == target); Button(action: { withAnimation(.spring(response: 0.3)) { action(); Haptics.selection() } }) { VStack(spacing: 0) { Text(String(format: "%.\(precision)f", value)).font(RetroTheme.font(size: 24, weight: .bold)).foregroundColor(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary).padding(.vertical, 4).frame(minWidth: 80).background(Color.black).overlay(Rectangle().stroke(currentFocus != nil && !isSelected ? RetroTheme.dim : RetroTheme.primary, lineWidth: isSelected ? 2 : 1)); Text(label).font(RetroTheme.font(size: 10, weight: isSelected ? .bold : .regular)).foregroundColor(isSelected ? RetroTheme.primary : RetroTheme.dim).padding(4).frame(minWidth: 80) } }.buttonStyle(PlainButtonStyle())
-    }
-    
+    // BINDINGS
     func binding(for field: InputTarget) -> Binding<Double> {
         switch field {
         case .voltage: return Binding(get: { voltageStr.toDouble }, set: { voltageStr = String(format: "%.1f", $0) })
@@ -403,7 +411,59 @@ struct UnifiedInputDrawer: View {
                     Button(action: onReset) { HStack { Image(systemName: "arrow.counterclockwise"); Text("RESET") }.font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.dim).padding(.vertical, 8).padding(.horizontal, 16).overlay(RoundedRectangle(cornerRadius: 6).stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1)) }.opacity(value > 0 && !isRecording ? 1.0 : 0.2).disabled(isRecording || value == 0)
                 }.transition(.opacity).onChange(of: isRecording) { _, newValue in if newValue { withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulseAmount = 1.06 } } else { withAnimation(.spring()) { pulseAmount = 1.0 } } }
             } else {
-                GeometryReader { geo in let midY = geo.size.height / 2; ZStack { ForEach(-visibleTicks...visibleTicks, id: \.self) { i in let index = round(value / step) + Double(i); let yPos = midY + (CGFloat(index) - CGFloat(value / step)) * 20; HStack { Rectangle().fill(RetroTheme.primary).frame(width: Int(index) % 5 == 0 ? 80 : 40, height: 2) }.position(x: geo.size.width / 2, y: yPos).opacity(calculateOpacity(yPos: yPos, height: geo.size.height)) } } }.clipShape(RoundedRectangle(cornerRadius: 12)).contentShape(Rectangle()).gesture(DragGesture().onChanged { g in let delta = g.translation.height - lastDragValue; dragOffset += delta; let steps = Int(dragOffset / 12); if steps != 0 { let newValue = value - Double(steps) * step * (abs(delta) > 10 ? 5.0 : 1.0); if target == .time && newValue > 999 { if value < 999 { value = 999; Haptics.play(.heavy) } else { UINotificationFeedbackGenerator().notificationOccurred(.warning) } } else if range.contains(newValue) { value = (newValue * 100).rounded() / 100; Haptics.selection() } else { if value > range.lowerBound { value = range.lowerBound; Haptics.play(.heavy) } }; dragOffset -= Double(steps) * 12 }; lastDragValue = g.translation.height }.onEnded { _ in lastDragValue = 0; dragOffset = 0 }).overlay(Rectangle().fill(RetroTheme.primary.opacity(0.1)).frame(height: 24).overlay(Rectangle().stroke(RetroTheme.primary.opacity(0.5), lineWidth: 1)).allowsHitTesting(false))
+                GeometryReader { geo in let midY = geo.size.height / 2; ZStack { ForEach(-visibleTicks...visibleTicks, id: \.self) { i in let index = round(value / step) + Double(i); let yPos = midY + (CGFloat(index) - CGFloat(value / step)) * 20; HStack { Rectangle().fill(RetroTheme.primary).frame(width: Int(index) % 5 == 0 ? 80 : 40, height: 2) }.position(x: geo.size.width / 2, y: yPos).opacity(calculateOpacity(yPos: yPos, height: geo.size.height)) } } }.clipShape(RoundedRectangle(cornerRadius: 12)).contentShape(Rectangle()).gesture(DragGesture().onChanged { g in
+                    let delta = g.translation.height - lastDragValue
+                    dragOffset += delta
+                    let steps = Int(dragOffset / 12)
+                    
+                    if steps != 0 {
+                        // Beregn ny verdi basert på dra-hastighet
+                        let speedMultiplier = abs(delta) > 10 ? 5.0 : 1.0
+                        let newValue = value - Double(steps) * step * speedMultiplier
+                        
+                        // 1. BESTEM ØVRE GRENSE
+                        // Hvis det er Tid eller Lengde: Maks 999.
+                        // Ellers: Bruk maksverdien fra 'range' (f.eks. 100V eller 1000A)
+                        let upperLimit: Double = (target == .time || target == .length) ? 999 : range.upperBound
+                        let lowerLimit: Double = range.lowerBound // Som regel 0
+                        
+                        // 2. LOGIKK FOR ØVRE GRENSE (Spenning, Strøm, Tid, Lengde)
+                        if newValue > upperLimit {
+                            if value < upperLimit {
+                                // Vi treffer taket akkurat nå -> "Heavy" dunk
+                                value = upperLimit
+                                Haptics.play(.heavy)
+                            } else {
+                                // Vi er allerede i taket og prøver å dra mer -> "Warning" nekt
+                                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            }
+                        }
+                        // 3. LOGIKK FOR NEDRE GRENSE (0)
+                        else if newValue < lowerLimit {
+                            if value > lowerLimit {
+                                // Vi treffer bunnen akkurat nå
+                                value = lowerLimit
+                                Haptics.play(.heavy)
+                            } else {
+                                // (Valgfritt) Nekt ved bunnen også
+                                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            }
+                        }
+                        // 4. VANLIG JUSTERING (Innenfor grensene)
+                        else {
+                            value = (newValue * 100).rounded() / 100
+                            Haptics.selection() // Vanlig klikk
+                        }
+                        
+                        // Nullstill offset for neste "hakk"
+                        dragOffset -= Double(steps) * 12
+                    }
+                    
+                    lastDragValue = g.translation.height
+                }.onEnded { _ in
+                    lastDragValue = 0
+                    dragOffset = 0
+                }).overlay(Rectangle().fill(RetroTheme.primary.opacity(0.1)).frame(height: 24).overlay(Rectangle().stroke(RetroTheme.primary.opacity(0.5), lineWidth: 1)).allowsHitTesting(false))
             }
             if target == .time { VStack { Spacer(); HStack { Spacer(); Button(action: { if showManualInput { onSync(value) }; withAnimation(.spring()) { showManualInput.toggle() } }) { Image(systemName: showManualInput ? "timer" : "slider.horizontal.3").font(.system(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(12).background(Color.black.opacity(0.9)).clipShape(Circle()).overlay(Circle().stroke(RetroTheme.dim, lineWidth: 1)).shadow(radius: 4) }.padding(15).disabled(isRecording).opacity(isRecording ? 0.3 : 1.0) } } }
         }.frame(width: 320, height: 280)
@@ -415,7 +475,7 @@ struct RetroJobRow: View {
     let job: WeldGroup; let isActive: Bool; var body: some View { HStack { VStack(alignment: .leading, spacing: 4) { HStack(spacing: 8) { Text(job.name).font(RetroTheme.font(size: 16, weight: .bold)).foregroundColor(isActive ? Color.green : RetroTheme.primary); if isActive { Text("ACTIVE JOB").font(RetroTheme.font(size: 8, weight: .heavy)).foregroundColor(.black).padding(.horizontal, 4).padding(.vertical, 2).background(Color.green) } }; Text("\(job.passes.count) passes").font(RetroTheme.font(size: 10)).foregroundColor(isActive ? Color.green.opacity(0.8) : RetroTheme.dim) }; Spacer(); Text(job.date, format: .dateTime.day().month()).font(RetroTheme.font(size: 12)).foregroundColor(isActive ? Color.green.opacity(0.8) : RetroTheme.dim); if isActive { Image(systemName: "record.circle").font(.system(size: 10)).foregroundColor(.green).blinkEffect() } }.padding(12).background(isActive ? Color.green.opacity(0.15) : Color.black.opacity(0.3)).overlay(Rectangle().stroke(isActive ? Color.green : RetroTheme.dim.opacity(0.5), lineWidth: isActive ? 2 : 1)).shadow(color: isActive ? Color.green.opacity(0.4) : .clear, radius: 8, x: 0, y: 0) }
 }
 
-// --- 5. EXTENDED INPUT VIEW (HELT NY LAYOUT - GRID) ---
+// --- 5. EXTENDED INPUT VIEW (MED FOKUS-STYRT RAMMEFARGE) ---
 struct ExtendedInputView: View {
     @Binding var process: WeldingProcess
     @Binding var diameter: Double
@@ -436,6 +496,13 @@ struct ExtendedInputView: View {
     
     let passTypes = ["Root", "Fill", "Cap", "-"]
     let transferModes = ["Short", "Spray", "Pulse", "Globular", "CMT", "-"]
+    
+    // NY: Fokus-styring for tekstfeltene
+    enum TextFieldId {
+        case filler
+        case gas
+    }
+    @FocusState private var focusedText: TextFieldId?
     
     var body: some View {
         VStack(spacing: 15) {
@@ -472,17 +539,29 @@ struct ExtendedInputView: View {
                     }
                 }
                 
-                // 3. Filler Metal
+                // 3. Filler Metal (MED AKTIV RAMME)
                 if visibleFields.contains(.filler) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("FILLER METAL").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                        TextField("Ex: 316L", text: $fillerMaterial).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.horizontal, 8).frame(height: 44).background(Color.black).overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+                        TextField("Ex: 316L", text: $fillerMaterial, onEditingChanged: { editing in
+                            if editing { withAnimation { focusedField = nil } }
+                        })
+                        .focused($focusedText, equals: .filler) // Koble til fokus
+                        .font(RetroTheme.font(size: 14, weight: .bold))
+                        .foregroundColor(RetroTheme.primary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 44)
+                        .background(Color.black)
+                        // Hvis fokusert -> Primary farge og tykkere linje. Ellers -> Dim.
+                        .overlay(Rectangle().stroke(focusedText == .filler ? RetroTheme.primary : RetroTheme.dim, lineWidth: focusedText == .filler ? 2 : 1))
                     }
                 }
                 
-                // 4. Diameter
+                // 4. Diameter (Resizable)
                 if visibleFields.contains(.diameter) {
-                    RetroInputBlock(label: "DIAMETER", unit: "mm", value: diameter, isActive: focusedField == .diameter) { withAnimation { focusedField = .diameter } }
+                    SelectableInput(label: "DIAMETER (mm)", value: diameter, isActive: focusedField == .diameter, isAnyFocused: focusedField != nil, precision: 1, width: nil) {
+                        focusedField = .diameter
+                    }
                 }
                 
                 // 5. Polarity
@@ -498,30 +577,46 @@ struct ExtendedInputView: View {
                     }
                 }
                 
-                // 6. WFS
+                // 6. WFS (Resizable)
                 if visibleFields.contains(.wfs) {
-                    RetroInputBlock(label: "WFS", unit: "m/min", value: wireFeedSpeed, isActive: focusedField == .wfs) { withAnimation { focusedField = .wfs } }
-                }
-                
-                // 7. Gas Type
-                if visibleFields.contains(.gas) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                        TextField("Ex: Mison 18", text: $gasType).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.horizontal, 8).frame(height: 44).background(Color.black).overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+                    SelectableInput(label: "WFS (m/min)", value: wireFeedSpeed, isActive: focusedField == .wfs, isAnyFocused: focusedField != nil, precision: 1, width: nil) {
+                        focusedField = .wfs
                     }
                 }
                 
-                // 8. Gas Flow
+                // 7. Gas Type (MED AKTIV RAMME)
+                if visibleFields.contains(.gas) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                        TextField("Ex: Mison 18", text: $gasType, onEditingChanged: { editing in
+                            if editing { withAnimation { focusedField = nil } }
+                        })
+                        .focused($focusedText, equals: .gas) // Koble til fokus
+                        .font(RetroTheme.font(size: 14, weight: .bold))
+                        .foregroundColor(RetroTheme.primary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 44)
+                        .background(Color.black)
+                        // Hvis fokusert -> Primary farge og tykkere linje. Ellers -> Dim.
+                        .overlay(Rectangle().stroke(focusedText == .gas ? RetroTheme.primary : RetroTheme.dim, lineWidth: focusedText == .gas ? 2 : 1))
+                    }
+                }
+                
+                // 8. Gas Flow (Resizable)
                 if visibleFields.contains(.flow) {
-                    RetroInputBlock(label: "FLOW", unit: "l/min", value: gasFlow, isActive: focusedField == .gasFlow) { withAnimation { focusedField = .gasFlow } }
+                    SelectableInput(label: "FLOW (l/min)", value: gasFlow, isActive: focusedField == .gasFlow, isAnyFocused: focusedField != nil, precision: 0, width: nil) {
+                        focusedField = .gasFlow
+                    }
                 }
                 
-                // 9. Interpass
+                // 9. Interpass (Resizable)
                 if visibleFields.contains(.interpass) {
-                    RetroInputBlock(label: "INTERPASS", unit: "°C", value: actualInterpass, isActive: focusedField == .interpass) { withAnimation { focusedField = .interpass } }
+                    SelectableInput(label: "INTERPASS (°C)", value: actualInterpass, isActive: focusedField == .interpass, isAnyFocused: focusedField != nil, precision: 0, width: nil) {
+                        focusedField = .interpass
+                    }
                 }
                 
-                // 10. Calc Speed (Viser alltid? Eller basert på settings?)
+                // 10. Calc Speed
                 if visibleFields.contains(.calcSpeed) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("CALC. SPEED").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
@@ -529,14 +624,69 @@ struct ExtendedInputView: View {
                     }
                 }
             }
-        }.padding(.top, 10)
+        }
+        .padding(.top, 10)
+        .contentShape(Rectangle()) // Gjør at klikk i tomrom fanges opp
+        .onTapGesture {
+            // 1. Tving tastaturet ned uansett hva vi trykker på i bakgrunnen
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            
+            // 2. Nullstill fokus-variabelen (slik at rammen blir dimmet umiddelbart)
+            focusedText = nil
+            
+            // 3. Lukk rullehjulet hvis det var åpent
+            if focusedField != nil {
+                withAnimation { focusedField = nil }
+                Haptics.selection()
+            }
+        }
     }
 }
-
-// --- 6. FIELD CUSTOMIZER VIEW (Ny Skuff) ---
-
-// --- HJELPEBLOKKER (Uendret) ---
-struct RetroInputBlock: View {
-    let label: String; let unit: String; var value: Double; var isActive: Bool; var onTap: () -> Void
-    var body: some View { Button(action: onTap) { VStack(alignment: .leading, spacing: 4) { Text(label).font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim); HStack { Text(String(format: value < 10 && value.truncatingRemainder(dividingBy: 1) != 0 ? "%.1f" : "%.0f", value)).font(RetroTheme.font(size: 16, weight: .bold)).foregroundColor(isActive ? .black : RetroTheme.primary); Spacer(); Text(unit).font(RetroTheme.font(size: 10)).foregroundColor(isActive ? .black : RetroTheme.dim) }.frame(height: 44).padding(.horizontal, 8).background(isActive ? RetroTheme.primary : Color.clear).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) } }.buttonStyle(.plain) }
+// --- 6. NY GJENBRUKBAR SELECTABLE INPUT STRUCT ---
+struct SelectableInput: View {
+    let label: String
+    let value: Double
+    let isActive: Bool
+    let isAnyFocused: Bool
+    let precision: Int
+    var width: CGFloat? = nil
+    let action: () -> Void
+    
+    var activeColor: Color {
+        return (isActive || !isAnyFocused) ? RetroTheme.primary : RetroTheme.dim
+    }
+    
+    var body: some View {
+        Button(action: {
+            // NY LINJE: Tving tastaturet ned før vi åpner hjulet
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            
+            withAnimation(.spring(response: 0.3)) {
+                action()
+                Haptics.selection()
+            }
+        }) {
+            VStack(spacing: 0) {
+                Text(String(format: "%.\(precision)f", value))
+                    .font(RetroTheme.font(size: 24, weight: .bold))
+                    .foregroundColor(activeColor)
+                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.black)
+                    .overlay(
+                        Rectangle()
+                            .stroke(activeColor, lineWidth: isActive ? 2 : 1)
+                    )
+                
+                Text(label)
+                    .font(RetroTheme.font(size: 10, weight: isActive ? .bold : .regular))
+                    .foregroundColor(activeColor)
+                    .padding(4)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .frame(width: width)
+        .frame(maxWidth: width == nil ? .infinity : nil)
+    }
 }

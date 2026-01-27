@@ -334,7 +334,9 @@ extension View {
 struct RetroModalDrawer<Content: View>: View {
     @Binding var isPresented: Bool
     let title: String
-    var fromTop: Bool = false // Sett til true hvis du vil den skal komme ned fra toppen (f.eks. ved tastaturbruk)
+    var fromTop: Bool = false
+    var showHeader: Bool = true       // NY: Kan skjule header
+    var fixedHeight: CGFloat? = nil   // NY: Kan sette fast høyde
     @ViewBuilder let content: Content
     
     var body: some View {
@@ -351,39 +353,45 @@ struct RetroModalDrawer<Content: View>: View {
                     }
             }
             
-            // 2. SELVE SKUFFEN (Unified Drawer Style)
+            // 2. SELVE SKUFFEN
             if isPresented {
                 VStack(spacing: 0) {
-                    // HEADER
-                    HStack {
-                        Text(title)
-                            .font(RetroTheme.font(size: 12, weight: .bold))
-                            .foregroundColor(RetroTheme.dim)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                isPresented = false
+                    // HEADER (Vis kun hvis showHeader er true)
+                    if showHeader {
+                        HStack {
+                            Text(title)
+                                .font(RetroTheme.font(size: 12, weight: .bold))
+                                .foregroundColor(RetroTheme.dim)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isPresented = false
+                                }
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(RetroTheme.primary)
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.5))
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(RetroTheme.dim, lineWidth: 1))
                             }
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(RetroTheme.primary)
-                                .padding(8)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(RetroTheme.dim, lineWidth: 1))
                         }
+                        .padding(16)
+                    } else {
+                        // Litt luft i toppen hvis header mangler
+                        Color.clear.frame(height: 16)
                     }
-                    .padding(16)
                     
                     // INNHOLD
                     content
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
                 }
-                .frame(width: 320) // Samme bredde som Timer/Input-modulene
+                .frame(width: 320)
+                .frame(height: fixedHeight) // Setter høyden her hvis den er definert
                 .background(Color.black)
                 .cornerRadius(12)
                 .overlay(
@@ -391,7 +399,7 @@ struct RetroModalDrawer<Content: View>: View {
                         .stroke(RetroTheme.dim, lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.8), radius: 20, x: 0, y: 10)
-                .padding(fromTop ? .top : .bottom, 50) // Luft fra kanten
+                .padding(fromTop ? .top : .bottom, 50)
                 .transition(.move(edge: fromTop ? .top : .bottom).combined(with: .opacity))
                 .zIndex(100)
             }
