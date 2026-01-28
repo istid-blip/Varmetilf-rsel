@@ -200,6 +200,8 @@ struct HeatInputView: View {
                                         RetroDropdown(title: "PROCESS", selection: currentProcess, options: availableProcesses, onSelect: { selectProcess($0) }, itemText: { $0.name }, itemDetail: { process in process.code == "Arc" ? "ISO/TR 18491" : "ISO 4063: \(process.code)"})
                                             .frame(maxWidth: .infinity)
                                             .frame(height: 44)
+                                            .disabled(focusedField != nil || isTimerRunning) // Sperrer menyen
+                                            .opacity(focusedField != nil || isTimerRunning ? 0.5 : 1.0)
                                     }
                                     Spacer(minLength: 20)
                                     VStack(alignment: .trailing, spacing: 1) {
@@ -264,8 +266,29 @@ struct HeatInputView: View {
                         // KNAPPER
                         Group {
                             HStack(spacing: 15) {
-                                Button(action: { if activeJobID != nil { tempJobName = currentJobName; withAnimation { isNamingJob = true; isJobNameFocused = true } } else { startNewSession() } }) { VStack(spacing: 2) { Text("NEW JOB").font(RetroTheme.font(size: 12, weight: .bold)); Text(activeJobID != nil ? "FINISH" : "RESET").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
-                                Button(action: logPass) { HStack { HStack(spacing: 4) { Text("LOG PASS").lineLimit(1).minimumScaleFactor(0.8).layoutPriority(0); Text("#\(passCounter)").layoutPriority(1) }.font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim) }.disabled(heatInput == 0 || isNamingJob)
+                                Button(action: {
+                                    if activeJobID != nil {
+                                        // 1. Hent det faktiske navnet fra den aktive jobben
+                                        if let activeJob = jobHistory.first(where: { $0.id == activeJobID }) {
+                                            tempJobName = activeJob.name
+                                        } else {
+                                            // Fallback: Hvis vi mot formodning ikke finner jobben, generer dato-navn
+                                            tempJobName = currentJobName.isEmpty ? "Job \(Date().formatted(.dateTime.day().month().hour().minute()))" : currentJobName
+                                        }
+                                        
+                                        withAnimation {
+                                            isNamingJob = true
+                                            isJobNameFocused = true
+                                        }
+                                    } else {
+                                        startNewSession()
+                                    } }) { VStack(spacing: 2) { Text("FINISH").font(RetroTheme.font(size: 12, weight: .bold)); Text("NEW JOB").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 80, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                                    .disabled(focusedField != nil || isTimerRunning ||
+                                              passCounter == 1) // Sperrer ved åpent hjul eller aktiv timer
+                                    .opacity(focusedField != nil || isTimerRunning ||
+                                             passCounter == 1 ? 0.5 : 1.0)
+                                Button(action: logPass) { HStack { HStack(spacing: 4) { Text("LOG PASS").lineLimit(1).minimumScaleFactor(0.8).layoutPriority(0); Text("#\(passCounter)").layoutPriority(1) }.font(RetroTheme.font(size: 20, weight: .heavy)); Spacer(); Image(systemName: "arrow.right.to.line") }.padding().foregroundColor(.black).background(heatInput > 0 ? RetroTheme.primary : RetroTheme.dim) }.disabled(heatInput == 0 || isNamingJob || isTimerRunning || focusedField != nil)
+                                    .opacity(isTimerRunning || focusedField != nil ? 0.5 : 1.0)
                                 if enableExtendedData {
                                     Button(action: { showExtendedDrawer = true }) { VStack(spacing: 2) { Image(systemName: "pencil.and.list.clipboard").font(RetroTheme.font(size: 16, weight: .bold)); Text("DATA+").font(RetroTheme.font(size: 8)) }.foregroundColor(RetroTheme.primary).frame(width: 60, height: 50).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }.transition(.move(edge: .trailing).combined(with: .opacity))
                                 }
