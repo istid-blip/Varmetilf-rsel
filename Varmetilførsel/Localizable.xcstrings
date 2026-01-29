@@ -22,6 +22,9 @@
     "%@ l/min" : {
 
     },
+    "%lld aktive" : {
+
+    },
     "%lld passes" : {
 
     },
@@ -70,9 +73,6 @@
     "BRUKERVEILEDNING" : {
 
     },
-    "CALC. SPEED" : {
-
-    },
     "CANCEL" : {
       "localizations" : {
         "nb" : {
@@ -93,13 +93,13 @@
         }
       }
     },
-    "DATA+" : {
+    "DATA" : {
 
     },
     "Du overstyrer nå de smarte standardvalgene. Kryss av feltene du ønsker skal være synlige." : {
 
     },
-    "ENDRE" : {
+    "ENDRE AKTIVE PROSESSER" : {
 
     },
     "Ex: 316L" : {
@@ -161,9 +161,6 @@
     "k=%.1f" : {
 
     },
-    "KALKULATOR" : {
-
-    },
     "kJ/mm" : {
 
     },
@@ -202,9 +199,6 @@
     "MANUELL OVERSTYRING" : {
 
     },
-    "mm/min" : {
-
-    },
     "NEW JOB" : {
       "localizations" : {
         "nb" : {
@@ -215,9 +209,6 @@
         }
       }
     },
-    "No k-factor" : {
-
-    },
     "NO PASSES RECORDED" : {
       "localizations" : {
         "nb" : {
@@ -227,6 +218,9 @@
           }
         }
       }
+    },
+    "PASS" : {
+
     },
     "POLARITET" : {
 
@@ -295,7 +289,7 @@
     "START" : {
 
     },
-    "STATUS: %lld AKTIVE" : {
+    "STRENG DATA" : {
 
     },
     "SVEISEMETODER" : {
@@ -325,6 +319,7 @@
 
     },
     "UTVIDET DATA" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -334,10 +329,10 @@
         }
       }
     },
-    "Varmetilførsel v1.2" : {
+    "Varmetilførsel v1.0" : {
 
     },
-    "Velg prosesser, k-faktor og standarder." : {
+    "Velg hvilke sveiseprosesser og standarder som skal være tilgjengelige i kalkulatoren." : {
 
     },
     "VIBRASJON" : {

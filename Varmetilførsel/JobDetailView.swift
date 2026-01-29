@@ -115,14 +115,15 @@ struct DetailedPassRow: View {
                 }
             }
             
-            // Utvidet data
+            // Utvidet data (Inkluderer nå Travel Speed)
             if hasExtendedData(pass) {
                 Divider().background(RetroTheme.dim.opacity(0.2))
                 VStack(spacing: 6) {
+                    // Linje 1: Prosess, Gass
                     HStack(spacing: 12) {
                         HStack(spacing: 2) {
                             Text(pass.processName)
-                            if let mode = pass.transferMode, mode != "-", mode != "Short" { Text("(\(mode))").foregroundColor(RetroTheme.dim) } // Vis mode hvis ikke default
+                            if let mode = pass.transferMode, mode != "-", mode != "Short" { Text("(\(mode))").foregroundColor(RetroTheme.dim) }
                         }.font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.primary.opacity(0.8))
                         
                         if let gas = pass.gasType, !gas.isEmpty { Text(gas).font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim) }
@@ -131,11 +132,14 @@ struct DetailedPassRow: View {
                         Spacer()
                     }
                     
+                    // Linje 2: Filler, Dia, Speed, Interpass
                     HStack(spacing: 8) {
-                        // Linje 2: Filler, Dia, Speed, Interpass
-                        if let filler = pass.fillerMaterial, !filler.isEmpty { ExtValue(icon: "fuelpump.fill", text: filler) } // Bruker fuelpump symbol for filler wire inntil videre
+                        if let filler = pass.fillerMaterial, !filler.isEmpty { ExtValue(icon: "fuelpump.fill", text: filler) }
                         if let dia = pass.fillerDiameter, dia > 0 { ExtValue(icon: "circle.circle", text: "Ø\(String(format: "%.1f", dia))") }
-                        if let speed = pass.savedTravelSpeed, speed > 0 { ExtValue(icon: "speedometer", text: "\(String(format: "%.0f", speed)) mm/m") }
+                        
+                        // Rettet enhet til mm/min
+                        if let speed = pass.savedTravelSpeed, speed > 0 { ExtValue(icon: "speedometer", text: "\(String(format: "%.0f", speed)) mm/min") }
+                        
                         if let ip = pass.actualInterpass, ip > 0 { ExtValue(icon: "thermometer", text: "\(String(format: "%.0f", ip))°C") }
                     }
                 }
@@ -145,11 +149,18 @@ struct DetailedPassRow: View {
     
     func ParamValue(label: String, value: String) -> some View { HStack(spacing: 2) { Text(label + ":").foregroundColor(RetroTheme.dim); Text(value).foregroundColor(RetroTheme.primary) }.font(RetroTheme.font(size: 10)) }
     func ExtValue(icon: String, text: String) -> some View { HStack(spacing: 2) { Image(systemName: icon).font(.system(size: 8)); Text(text) }.font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.dim).padding(2).overlay(RoundedRectangle(cornerRadius: 2).stroke(RetroTheme.dim.opacity(0.3), lineWidth: 1)) }
+    
+    // OPPDATERT: Sjekker nå også om savedTravelSpeed har verdi
     func hasExtendedData(_ p: SavedCalculation) -> Bool {
-        return (p.fillerDiameter ?? 0) > 0 || (p.wireFeedSpeed ?? 0) > 0 || (p.actualInterpass ?? 0) > 0 || (p.gasType != nil) || (p.gasFlow ?? 0) > 0 || (p.fillerMaterial != nil)
+        return (p.fillerDiameter ?? 0) > 0 ||
+               (p.wireFeedSpeed ?? 0) > 0 ||
+               (p.actualInterpass ?? 0) > 0 ||
+               (p.gasType != nil) ||
+               (p.gasFlow ?? 0) > 0 ||
+               (p.fillerMaterial != nil) ||
+               (p.savedTravelSpeed ?? 0) > 0
     }
 }
-
 // TEXT FIELD
 struct RetroTextField: View {
     let title: String; @Binding var text: String; @State private var localText: String = ""; @FocusState private var isFocused: Bool

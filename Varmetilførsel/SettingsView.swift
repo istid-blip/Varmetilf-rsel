@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  Varmetilførsel
 //
-//  Redesigned Extended Data Section
+//  Redesigned Configuration
 //  Clean Retro Style & Native Localization
 //
 
@@ -16,7 +16,10 @@ struct SettingsView: View {
     @AppStorage("app_language") private var selectedLanguage: String = "nb"
     @AppStorage("enable_haptics") private var enableHaptics: Bool = true
     @AppStorage("hidden_process_codes") private var hiddenProcessCodes: String = ""
-    @AppStorage("enableExtendedData") private var enableExtendedData = false
+    
+    // Merk: Vi beholder denne variabelen i tilfelle andre view bruker den,
+    // men vi fjerner togglen fra UI da funksjonen nå er standard.
+    @AppStorage("enableExtendedData") private var enableExtendedData = true
     
     // --- FELT LOGIKK ---
     // useDefaults = true betyr "Smart Auto".
@@ -94,87 +97,125 @@ struct SettingsView: View {
                             
                             DividerLine()
                             
-                            // --- UTVIDET DATA SEKSJON ---
-                            VStack(spacing: 0) {
-                                RetroToggle(title: "UTVIDET DATA", isOn: $enableExtendedData)
+                            // --- B: SVEISEMETODER ---
+                            VStack(alignment: .leading, spacing: 8) {
                                 
-                                // Det "tekniske panelet" som felles ned
-                                if enableExtendedData {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        
-                                        // 1. Forklaring / Status
-                                        HStack(alignment: .top) {
-                                            Image(systemName: "info.circle")
-                                                .font(.system(size: 10))
-                                                .foregroundColor(RetroTheme.dim)
-                                                .padding(.top, 2)
-                                            Text(useDefaults ? "Smart-modus aktiv. Felter tilpasses automatisk valgt sveiseprosess." : "Manuell modus. Du bestemmer hvilke felter som vises uansett prosess.")
-                                                .font(RetroTheme.font(size: 10))
-                                                .foregroundColor(RetroTheme.dim)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                        .padding(.bottom, 4)
-                                        
-                                        // 2. Overstyrings-bryter
-                                        RetroToggle(title: "MANUELL OVERSTYRING", isOn: isManualOverride, isSubToggle: true)
-                                        
-                                        // 3. Rediger-knapp (Kun synlig ved manuell)
-                                        if isManualOverride.wrappedValue {
-                                            Button(action: {
-                                                Haptics.selection()
-                                                showFieldDrawer = true
-                                            }) {
-                                                HStack {
-                                                    VStack(alignment: .leading, spacing: 2) {
-                                                        Text("REDIGER FELTER")
-                                                            .font(RetroTheme.font(size: 12, weight: .bold))
-                                                        Text("\(selectedFieldsCount) valgt")
-                                                            .font(RetroTheme.font(size: 9))
-                                                            .foregroundColor(RetroTheme.dim)
-                                                    }
-                                                    Spacer()
-                                                    Image(systemName: "chevron.right")
-                                                        .font(.system(size: 10))
-                                                }
-                                                .foregroundColor(RetroTheme.primary)
-                                                .padding(10)
-                                                .background(RetroTheme.primary.opacity(0.1))
-                                                .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                                            }
-                                            .transition(.move(edge: .top).combined(with: .opacity))
-                                        }
+                                Text("SVEISEMETODER")
+                                    .font(RetroTheme.font(size: 14, weight: .bold))
+                                    .foregroundColor(RetroTheme.primary)
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    
+                                    // 1. Forklaring / Info
+                                    HStack(alignment: .top) {
+                                        Image(systemName: "info.circle")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                            .padding(.top, 2)
+                                        Text("Velg hvilke sveiseprosesser og standarder som skal være tilgjengelige i kalkulatoren.")
+                                            .font(RetroTheme.font(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
-                                    .padding(12)
-                                    .background(Color.white.opacity(0.03)) // Svak bakgrunn
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 0)
-                                            .stroke(style: StrokeStyle(lineWidth: 1, dash: [4])) // Stiplet "teknisk" linje
-                                            .foregroundColor(RetroTheme.dim.opacity(0.5))
-                                    )
-                                    .padding(.top, 12) // Avstand fra hovedbryteren
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                    .padding(.bottom, 4)
+                                    
+                                    // 2. Endre-knapp
+                                    Button(action: {
+                                        Haptics.selection()
+                                        showProcessDrawer = true
+                                    }) {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("ENDRE AKTIVE PROSESSER")
+                                                    .font(RetroTheme.font(size: 12, weight: .bold))
+                                                Text("\(activeCount) aktive")
+                                                    .font(RetroTheme.font(size: 9))
+                                                    .foregroundColor(RetroTheme.dim)
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 10))
+                                        }
+                                        .foregroundColor(RetroTheme.primary)
+                                        .padding(10)
+                                        .background(RetroTheme.primary.opacity(0.1))
+                                        .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                    }
                                 }
+                                .padding(12)
+                                .background(Color.white.opacity(0.03))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 0)
+                                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                        .foregroundColor(RetroTheme.dim.opacity(0.5))
+                                )
+                            }
+                            
+                            DividerLine()
+                            
+                            // --- C: STRENG DATA ---
+                            VStack(alignment: .leading, spacing: 8) {
+                                
+                                Text("STRENG DATA")
+                                    .font(RetroTheme.font(size: 14, weight: .bold))
+                                    .foregroundColor(RetroTheme.primary)
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    
+                                    // 1. Forklaring / Status
+                                    HStack(alignment: .top) {
+                                        Image(systemName: "info.circle")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                            .padding(.top, 2)
+                                        Text(useDefaults ? "Smart-modus aktiv. Felter tilpasses automatisk valgt sveiseprosess." : "Manuell modus. Du bestemmer hvilke felter som vises uansett prosess.")
+                                            .font(RetroTheme.font(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .padding(.bottom, 4)
+                                    
+                                    // 2. Overstyrings-bryter
+                                    RetroToggle(title: "MANUELL OVERSTYRING", isOn: isManualOverride, isSubToggle: true)
+                                    
+                                    // 3. Rediger-knapp (Kun synlig ved manuell)
+                                    if isManualOverride.wrappedValue {
+                                        Button(action: {
+                                            Haptics.selection()
+                                            showFieldDrawer = true
+                                        }) {
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text("REDIGER FELTER")
+                                                        .font(RetroTheme.font(size: 12, weight: .bold))
+                                                    Text("\(selectedFieldsCount) valgt")
+                                                        .font(RetroTheme.font(size: 9))
+                                                        .foregroundColor(RetroTheme.dim)
+                                                }
+                                                Spacer()
+                                                Image(systemName: "chevron.right")
+                                                    .font(.system(size: 10))
+                                            }
+                                            .foregroundColor(RetroTheme.primary)
+                                            .padding(10)
+                                            .background(RetroTheme.primary.opacity(0.1))
+                                            .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+                                        }
+                                        .transition(.move(edge: .top).combined(with: .opacity))
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color.white.opacity(0.03))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 0)
+                                        .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                        .foregroundColor(RetroTheme.dim.opacity(0.5))
+                                )
+                                .animation(.easeInOut(duration: 0.2), value: isManualOverride.wrappedValue)
                             }
                         }
                         
-                        // --- B: KALKULATOR ---
-                        VStack(alignment: .leading, spacing: 12) {
-                            SectionHeader(title: "KALKULATOR")
-                            HStack(alignment: .center, spacing: 16) {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("SVEISEMETODER").font(RetroTheme.font(size: 16, weight: .bold)).foregroundColor(RetroTheme.primary)
-                                    Text("Velg prosesser, k-faktor og standarder.").font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim).fixedSize(horizontal: false, vertical: true)
-                                    Text("STATUS: \(activeCount) AKTIVE").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 4)
-                                }
-                                Spacer()
-                                Button(action: { Haptics.selection(); showProcessDrawer = true }) {
-                                    VStack(spacing: 4) { Image(systemName: "slider.horizontal.3").font(.system(size: 18)); Text("ENDRE").font(RetroTheme.font(size: 10, weight: .bold)) }
-                                        .foregroundColor(RetroTheme.primary).frame(width: 60, height: 48).background(Color.black).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
-                                }.buttonStyle(.plain)
-                            }.padding(14).overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
-                        }
-                        
-                        // --- C: BRUKERVEILEDNING ---
+                        // --- D: BRUKERVEILEDNING ---
                         VStack(alignment: .leading, spacing: 10) {
                             SectionHeader(title: "BRUKERVEILEDNING")
                             RetroGuideView(isDetailed: true)
@@ -184,7 +225,7 @@ struct SettingsView: View {
                         
                         // --- FOOTER ---
                         VStack(spacing: 6) {
-                            Text("Varmetilførsel v1.2").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                            Text("Varmetilførsel v1.0").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                             Text("© \(String(Calendar.current.component(.year, from: Date()))) Frode Halrynjo")
                         }.font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim).frame(maxWidth: .infinity)
                     }.padding(24)
@@ -279,5 +320,3 @@ struct SettingsView: View {
         Rectangle().fill(RetroTheme.dim.opacity(0.2)).frame(height: 1).padding(.vertical, 4)
     }
 }
-
-
