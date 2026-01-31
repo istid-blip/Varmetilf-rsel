@@ -59,18 +59,21 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
                         .minimumScaleFactor(0.8)
                     
                     if let detail = itemDetail?(selection) {
-                        HStack {
-                            Text(detail)
-                                .font(RetroTheme.font(size: 9))
-                            Spacer()
-                            Text(isExpanded ? "▲" : "▼")
-                                .font(RetroTheme.font(size: 10))
-                        }
-                        .foregroundColor(RetroTheme.dim)
+                        Text(detail)
+                            .font(RetroTheme.font(size: 9))
+                            .foregroundColor(RetroTheme.dim)
                     }
                 }
+                
+                Spacer() // Dytter innholdet til venstre og pilen til høyre
+                
+                // Pilen ligger nå her, så den vises alltid
+                Text(isExpanded ? "▲" : "▼")
+                    .font(RetroTheme.font(size: 10))
+                    .foregroundColor(RetroTheme.dim)
             }
             .padding(10)
+            .frame(maxWidth: .infinity) // <--- VIKTIG: Fyller bredden
             .background(Color.black)
             .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
         }
@@ -83,90 +86,184 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
                 }
             }
         )
-        .zIndex(isExpanded ? 100 : 1)
+        .zIndex(isExpanded ? 4000 : 4000)
     }
 
     @ViewBuilder
-        private func dropdownOverlay(geo: GeometryProxy) -> some View {
-            ZStack(alignment: .topLeading) {
-                // KLIKK-FANGER
-                Color.black.opacity(0.001)
-                    .frame(width: 4000, height: 4000)
-                    .contentShape(Rectangle())
-                    .offset(x: -1000, y: -1000)
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            isWidthExpanded = false
-                            isExpanded = false
-                        }
-                    }
-
-                // SELVE MENY-LISTEN
-                VStack(alignment: .leading, spacing: 0) { // La til alignment: .leading her
-                    ForEach(options) { option in
-                        RetroDropdownRow(
-                            option: option,
-                            selection: selection,
-                            itemText: itemText,
-                            itemDetail: itemDetail,
-                            onSelect: {
-                                onSelect(option)
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    isWidthExpanded = false
-                                    isExpanded = false
-                                }
-                            }
-                        )
+    private func dropdownOverlay(geo: GeometryProxy) -> some View {
+        ZStack(alignment: .topLeading) {
+            // KLIKK-FANGER
+            Color.black.opacity(0.001)
+                .frame(width: 4000, height: 4000)
+                .contentShape(Rectangle())
+                .offset(x: -1000, y: -1000)
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isWidthExpanded = false
+                        isExpanded = false
                     }
                 }
-                .background(Color.black)
-                .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
-                // 1. Hindre at den går ut av skjermen:
-                // Vi setter en max bredde som er skjermbredde minus avstanden fra venstre side
-                .frame(width: isWidthExpanded ? nil : geo.size.width, alignment: .leading)
-                .frame(minWidth: geo.size.width)
-                .frame(maxWidth: UIScreen.main.bounds.width - geo.frame(in: .global).minX - 40, alignment: .leading)
-                .offset(y: geo.size.height + 5)
-                .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: 10)
+
+            // SELVE MENY-LISTEN
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(options) { option in
+                    RetroDropdownRow(
+                        option: option,
+                        selection: selection,
+                        itemText: itemText,
+                        itemDetail: itemDetail,
+                        onSelect: {
+                            onSelect(option)
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                isWidthExpanded = false
+                                isExpanded = false
+                            }
+                        }
+                    )
+                }
             }
+            .background(Color.black)
+            .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
+            // 1. Hindre at den går ut av skjermen:
+            .frame(width: isWidthExpanded ? nil : geo.size.width, alignment: .leading)
+            .frame(minWidth: geo.size.width)
+            .frame(maxWidth: UIScreen.main.bounds.width - (geo.frame(in: .global).minX < 0 ? 0 : geo.frame(in: .global).minX) - 20, alignment: .leading)
+            .offset(y: geo.size.height + 5)
+            .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: 10)
         }
     }
+}
 
-    struct RetroDropdownRow<T: Equatable>: View {
-        let option: T
-        let selection: T
-        let itemText: (T) -> String
-        let itemDetail: ((T) -> String)?
-        let onSelect: () -> Void
+struct RetroDropdownRow<T: Equatable>: View {
+    let option: T
+    let selection: T
+    let itemText: (T) -> String
+    let itemDetail: ((T) -> String)?
+    let onSelect: () -> Void
 
-        var body: some View {
-            Button(action: onSelect) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(itemText(option))
-                        .font(RetroTheme.font(size: 14, weight: .bold))
-                        .foregroundColor(option == selection ? Color.black : RetroTheme.primary)
-                        .lineLimit(1) // Kutter teksten hvis den er for lang for skjermen
-                    
-                    if let detail = itemDetail?(option) {
-                        Text(detail)
-                            .font(RetroTheme.font(size: 9))
-                            .foregroundColor(option == selection ? Color.black.opacity(0.7) : RetroTheme.dim)
-                            .lineLimit(1)
-                    }
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(itemText(option))
+                    .font(RetroTheme.font(size: 14, weight: .bold))
+                    .foregroundColor(option == selection ? Color.black : RetroTheme.primary)
+                    .lineLimit(1)
+                
+                if let detail = itemDetail?(option) {
+                    Text(detail)
+                        .font(RetroTheme.font(size: 9))
+                        .foregroundColor(option == selection ? Color.black.opacity(0.7) : RetroTheme.dim)
+                        .lineLimit(1)
                 }
-                // 2. Fjerne hopping: Tvinger innholdet til venstre med en gang
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(option == selection ? RetroTheme.primary : Color.black)
             }
-            .buttonStyle(PlainButtonStyle()) // Sikrer at knappen ikke får standard blå-effekt
-            .overlay(
-                Rectangle().frame(height: 1).foregroundColor(RetroTheme.dim.opacity(0.3)),
-                alignment: .bottom
-            )
+            // 2. Fjerne hopping: Tvinger innholdet til venstre med en gang
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .background(option == selection ? RetroTheme.primary : Color.black)
         }
-    } //Retrodropdown kan kanskje trimmes
+        .buttonStyle(PlainButtonStyle())
+        .overlay(
+            Rectangle().frame(height: 1).foregroundColor(RetroTheme.dim.opacity(0.3)),
+            alignment: .bottom
+        )
+    }
+} //Retrodropdown kan kanskje trimmes
+
+struct RetroDropdown2<T: Identifiable & Equatable>: View {
+    let title: String
+    let selection: T
+    let options: [T]
+    let onSelect: (T) -> Void
+    let itemText: (T) -> String
+    
+    let itemDetail: ((T) -> String)? = nil
+    
+    @State private var isExpanded = false
+    
+    var body: some View {
+        Button(action: {
+            Haptics.play(.light)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isExpanded.toggle()
+            }
+        }) {
+            HStack {
+                Text(itemText(selection))
+                    .font(RetroTheme.font(size: 12, weight: .bold))
+                    .foregroundColor(RetroTheme.primary)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Text(isExpanded ? "▲" : "▼")
+                    .font(RetroTheme.font(size: 10))
+                    .foregroundColor(RetroTheme.dim)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity)
+            .background(Color.black)
+            .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .overlay(alignment: .topLeading) {
+            GeometryReader { geo in
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(options) { option in
+                            Button(action: {
+                                onSelect(option)
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isExpanded = false
+                                }
+                            }) {
+                                HStack {
+                                    Text(itemText(option))
+                                        .font(RetroTheme.font(size: 12, weight: .bold))
+                                        .foregroundColor(option == selection ? Color.black : RetroTheme.primary)
+                                        .lineLimit(1)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 10)
+                                .background(option == selection ? RetroTheme.primary : Color.black)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .overlay(
+                                Rectangle().frame(height: 1).foregroundColor(RetroTheme.dim.opacity(0.3)),
+                                alignment: .bottom
+                            )
+                        }
+                    }
+                    .background(Color.black)
+                    .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1.5))
+                    .frame(width: geo.size.width)
+                    .offset(y: geo.size.height + 4)
+                    .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: 10)
+                    // HER ER ENDRINGEN:
+                    // Vi bruker scale (med anchor: .top) + opacity.
+                    // Dette gjør at menyen "vokser" ut fra bunnen av knappen.
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.8, anchor: .top)),
+                            removal: .opacity
+                        )
+                    )
+                    // Klikk-fanger bak
+                    .background(
+                        Color.black.opacity(0.001)
+                            .frame(width: 4000, height: 4000)
+                            .offset(x: -2000, y: -2000)
+                            .onTapGesture {
+                                withAnimation { isExpanded = false }
+                            }
+                    )
+                }
+            }
+        }
+        .zIndex(isExpanded ? 100 : 1)
+    }
+}
 
 struct RetroBox: ViewModifier {
     func body(content: Content) -> some View {
@@ -512,3 +609,6 @@ extension View {
         self.shadow(color: RetroTheme.primary.opacity(0.8), radius: 8, x: 0, y: 0)
     }
 }
+extension String: Identifiable {
+    public var id: String { self }
+}//For retrodropdown2

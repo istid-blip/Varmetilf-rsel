@@ -398,12 +398,56 @@ struct HeatInputView: View {
     func resetStopwatch() { isTimerRunning = false; timerAccumulatedTime = 0; timerStartTimestamp = 0; timeStr = "0"; Haptics.play(.medium) }
     
     func logPass() {
-        if isTimerRunning { timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp); timeStr = String(format: "%.0f", timerAccumulatedTime); isTimerRunning = false }
-        let job: WeldGroup; if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) { job = existingJob } else { job = WeldGroup(name: currentJobName.isEmpty ? "Job \(Date().formatted(.dateTime.day().month().hour().minute()))" : currentJobName); modelContext.insert(job); activeJobID = job.id }
-        let calculatedSpeedToSave = calculatedSpeed > 0 ? calculatedSpeed : nil
-        let newPass = SavedCalculation(name: "Pass #\(passCounter)", voltage: voltageStr.toDouble, amperage: amperageStr.toDouble, travelTime: timeStr.toDouble, weldLength: lengthStr.toDouble, heatInput: heatInput, processName: selectedProcessName, kFactorUsed: extIsArcEnergy ? 1.0 : efficiency, fillerDiameter: enableExtendedData ? extDiameter : nil, polarity: enableExtendedData ? extPolarity : nil, wireFeedSpeed: enableExtendedData ? extWireFeed : nil, isArcEnergy: enableExtendedData ? extIsArcEnergy : false, actualInterpass: enableExtendedData ? extActualInterpass : nil, gasType: enableExtendedData ? extGasType : nil, passType: enableExtendedData ? extPassType : nil, gasFlow: enableExtendedData ? extGasFlow : nil, transferMode: enableExtendedData ? extTransferMode : nil, fillerMaterial: enableExtendedData ? extFillerMaterial : nil, savedTravelSpeed: calculatedSpeedToSave)
-        newPass.group = job; passCounter += 1; job.date = Date(); try? modelContext.save(); UIImpactFeedbackGenerator(style: .heavy).impactOccurred(); resetStopwatch()
-    }
+            if isTimerRunning {
+                timerAccumulatedTime += (Date().timeIntervalSince1970 - timerStartTimestamp)
+                timeStr = String(format: "%.0f", timerAccumulatedTime)
+                isTimerRunning = false
+            }
+            
+            let job: WeldGroup
+            if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) {
+                job = existingJob
+            } else {
+                job = WeldGroup(name: currentJobName.isEmpty ? "Job \(Date().formatted(.dateTime.day().month().hour().minute()))" : currentJobName)
+                modelContext.insert(job)
+                activeJobID = job.id
+            }
+            
+            let calculatedSpeedToSave = calculatedSpeed > 0 ? calculatedSpeed : nil
+            
+            // HER var feilen: Vi sjekker nå om verdien > 0 eller ikke tom, i stedet for å stole på "enableExtendedData"
+            let newPass = SavedCalculation(
+                name: "Pass #\(passCounter)",
+                voltage: voltageStr.toDouble,
+                amperage: amperageStr.toDouble,
+                travelTime: timeStr.toDouble,
+                weldLength: lengthStr.toDouble,
+                heatInput: heatInput,
+                processName: selectedProcessName,
+                kFactorUsed: extIsArcEnergy ? 1.0 : efficiency,
+                
+                // Lagrer utvidet data uavhengig av innstillingen "enableExtendedData"
+                fillerDiameter: extDiameter > 0 ? extDiameter : nil,
+                polarity: extPolarity,
+                wireFeedSpeed: extWireFeed > 0 ? extWireFeed : nil,
+                isArcEnergy: extIsArcEnergy,
+                actualInterpass: extActualInterpass > 0 ? extActualInterpass : nil,
+                gasType: !extGasType.isEmpty ? extGasType : nil,
+                passType: extPassType,
+                gasFlow: extGasFlow > 0 ? extGasFlow : nil,
+                transferMode: extTransferMode,
+                fillerMaterial: !extFillerMaterial.isEmpty ? extFillerMaterial : nil,
+                savedTravelSpeed: calculatedSpeedToSave
+            )
+            
+            newPass.group = job
+            passCounter += 1
+            job.date = Date() // Oppdater dato for sist endret
+            
+            try? modelContext.save()
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            resetStopwatch()
+        }
     
     // BINDINGS
     func binding(for field: InputTarget) -> Binding<Double> {
@@ -447,7 +491,25 @@ struct HeatInputView: View {
         }
     func restoreActiveJob() { if let id = activeJobID, let j = jobHistory.first(where: { $0.id == id }) { currentJobName = j.name; passCounter = j.passes.count + 1 } else { activeJobID = nil; passCounter = 1 } }
     func startNewSession() { activeJobID = nil; passCounter = 1; currentJobName = ""; extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false; extActualInterpass = 0.0; extPassType = "Fill"; extGasFlow = 0.0; Haptics.play(.medium) }
-    func finalizeAndSaveJob() { withAnimation { isNamingJob = false }; startNewSession(); UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    func finalizeAndSaveJob() {
+            // 1. Finn aktiv jobb og oppdater navnet
+            if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) {
+                // Hvis brukeren har skrevet et navn, bruk det.
+                if !tempJobName.isEmpty {
+                    existingJob.name = tempJobName
+                }
+            }
+            
+            // 2. Lagre endringen til databasen
+            try? modelContext.save()
+            
+            // 3. Lukk dialogen og start ny sesjon
+            withAnimation {
+                isNamingJob = false
+            }
+            startNewSession()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
 }
 
 // --- 3. UNIFIED DRAWER (Uendret) ---
@@ -599,7 +661,7 @@ struct ExtendedInputView: View {
                     }
                 }) {
                     Text("ARC ENERGY")
-                        .font(RetroTheme.font(size: 10, weight: .bold))
+                        .font(RetroTheme.font(size: 12, weight: .bold))
                         .foregroundColor(isArcEnergy ? .black : RetroTheme.primary) // Sort tekst på grønn bakgrunn
                         .padding(.horizontal, 12)
                         .padding(.vertical, 12)
@@ -633,9 +695,20 @@ struct ExtendedInputView: View {
                 // 2. Transfer Mode
                 if visibleFields.contains(.transfer) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("TRANSFER").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                        Menu { ForEach(transferModes, id: \.self) { mode in Button(mode) { transferMode = mode } } } label: { HStack { Text(transferMode).font(RetroTheme.font(size: 12, weight: .bold)); Spacer(); Image(systemName: "chevron.down").font(.system(size: 8)) }.foregroundColor(RetroTheme.primary).padding(8).frame(height: 44).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                        Text("TRANSFER")
+                            .font(RetroTheme.font(size: 10))
+                            .foregroundColor(RetroTheme.dim)
+                        
+                        RetroDropdown2( // <--- Endret til RetroDropdown2
+                            title: "TRANSFER",
+                            selection: transferMode,
+                            options: transferModes,
+                            onSelect: { transferMode = $0 },
+                            itemText: { $0 }
+                            // itemDetail trenger vi ikke sende med her
+                        )
                     }
+                    .zIndex(90) // Denne må fortsatt være her!
                 }
                 
                 // 3. Filler Metal
