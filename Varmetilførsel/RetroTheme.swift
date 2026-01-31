@@ -410,26 +410,105 @@ struct RetroModalDrawer<Content: View>: View {
 
 // --- STANDARD RETRO TOGGLE COMPONENT ---
 struct RetroToggle: View {
-    let title: LocalizedStringKey
     @Binding var isOn: Bool
-    var isSubToggle: Bool = false // Nyhet: Kan gjøres mindre
+    var isSubToggle: Bool = false // Bestemmer om den skal være liten eller stor
     
     var body: some View {
-        HStack {
-            Text(title)
-                .font(RetroTheme.font(size: isSubToggle ? 14 : 18, weight: isSubToggle ? .bold : .bold)) // Litt mindre tekst hvis sub-toggle
-                .foregroundColor(RetroTheme.primary)
-
-            Spacer()
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 0).stroke(RetroTheme.primary, lineWidth: 1).background(Color.black.opacity(0.01)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32)
-                if isOn { RoundedRectangle(cornerRadius: 0).fill(RetroTheme.primary.opacity(0.1)).frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32) }
-                RoundedRectangle(cornerRadius: 0).fill(isOn ? RetroTheme.primary : RetroTheme.dim).frame(width: isSubToggle ? 16 : 24, height: isSubToggle ? 16 : 24).overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.black, lineWidth: 2).opacity(0.3)).shadow(color: isOn ? RetroTheme.primary.opacity(0.8) : .clear, radius: 8).offset(x: isOn ? (isSubToggle ? 8 : 13) : (isSubToggle ? -8 : -13))
+        ZStack {
+            // Selve rammen (Bakgrunn)
+            Rectangle()
+                .stroke(RetroTheme.primary, lineWidth: 1)
+                .background(Color.black.opacity(0.01)) // For å gjøre den lettere å trykke på
+                .frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32)
+            
+            // "PÅ"-fyll (Grønn bakgrunn når aktiv)
+            if isOn {
+                Rectangle()
+                    .fill(RetroTheme.primary.opacity(0.1))
+                    .frame(width: isSubToggle ? 40 : 60, height: isSubToggle ? 24 : 32)
             }
-            .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6, blendDuration: 0)) { isOn.toggle() } }
+            
+            // Glideknappen (Den fysiske bryteren)
+            RoundedRectangle(cornerRadius: 2)
+                .fill(isOn ? RetroTheme.primary : RetroTheme.dim)
+                .frame(width: isSubToggle ? 16 : 24, height: isSubToggle ? 16 : 24)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Color.black, lineWidth: 2)
+                        .opacity(0.3)
+                )
+                // Glød kun når den er PÅ
+                .shadow(color: isOn ? RetroTheme.primary.opacity(0.8) : .clear, radius: 8)
+                // Posisjonering av knappen (Venstre eller Høyre)
+                .offset(x: isOn ? (isSubToggle ? 8 : 13) : (isSubToggle ? -8 : -13))
         }
+        .contentShape(Rectangle()) // Gjør hele området trykkbart
+        .onTapGesture {
+            Haptics.selection()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isOn.toggle()
+            }
+        }
+    }
+}
+
+struct RetroLanguageSwitcher: View {
+    @Binding var selectedLanguage: String // Forventer "nb" eller "en"
+    @Namespace private var animation
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // Norsk valg (bruker "nb")
+            languageButton(title: "NORSK", value: "nb")
+            
+            // Engelsk valg
+            languageButton(title: "ENGLISH", value: "en")
+        }
+        .padding(4)
+        .background(Color.black)
+        .overlay(
+            Rectangle()
+                .stroke(RetroTheme.primary, lineWidth: 2)
+        )
+    }
+    
+    @ViewBuilder
+    private func languageButton(title: String, value: String) -> some View {
+        let isSelected = selectedLanguage == value
+        
+        ZStack {
+            if isSelected {
+                // VALGT: Solid grønn med glød
+                Rectangle()
+                    .fill(RetroTheme.primary)
+                    .matchedGeometryEffect(id: "ActiveTab", in: animation)
+                    .retroGlow()
+            } else {
+                // IKKE VALGT: Svak grønn bakgrunn (samme som i RetroToggle)
+                Rectangle()
+                    .fill(RetroTheme.primary.opacity(0.1))
+            }
+        }
+        .overlay(
+            Text(title)
+                .font(RetroTheme.font(size: 14, weight: .bold))
+                // Svart tekst på valgt bakgrunn, grønn tekst på svak bakgrunn
+                .foregroundColor(isSelected ? .black : RetroTheme.primary)
+        )
+        .frame(height: 36)
+        .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
-        .onTapGesture { Haptics.selection(); withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { isOn.toggle() } }
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedLanguage = value
+            }
+            Haptics.selection()
+        }
+    }
+}
+
+extension View {
+    func retroGlow() -> some View {
+        self.shadow(color: RetroTheme.primary.opacity(0.8), radius: 8, x: 0, y: 0)
     }
 }

@@ -326,7 +326,7 @@ struct HeatInputView: View {
                             
                             ScrollView {
                                 VStack(alignment: .leading, spacing: 15) {
-                                    if jobHistory.isEmpty { RetroGuideView(isDetailed: false).frame(maxWidth: .infinity, alignment: .leading) }
+                                    if jobHistory.isEmpty { Brukermanual(isDetailed: false).frame(maxWidth: .infinity, alignment: .leading) }
                                     else { Text("> JOB HISTORY").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(.top, 10); LazyVStack(spacing: 12) { ForEach(jobHistory) { job in NavigationLink(destination: JobDetailView(job: job)) { RetroJobRow(job: job, isActive: job.id == activeJobID) }.buttonStyle(PlainButtonStyle()) } } }
                                 }.padding(.horizontal).padding(.bottom, focusedField != nil ? 320 : 20).animation(.easeOut(duration: 0.3), value: focusedField != nil)
                             }
@@ -602,7 +602,7 @@ struct ExtendedInputView: View {
                         .font(RetroTheme.font(size: 10, weight: .bold))
                         .foregroundColor(isArcEnergy ? .black : RetroTheme.primary) // Sort tekst på grønn bakgrunn
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 12)
                         .background(isArcEnergy ? RetroTheme.primary : Color.clear) // Grønn bakgrunn når aktiv
                         .overlay(
                             Rectangle().stroke(RetroTheme.primary, lineWidth: 1)

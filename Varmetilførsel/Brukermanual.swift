@@ -7,18 +7,11 @@
 
 import SwiftUI
 
-struct RetroGuideView: View {
+struct Brukermanual: View {
     let isDetailed: Bool // True = Settings (mer tekst), False = Empty State (kun punkter)
 
     var body: some View {
         VStack(alignment: .leading) {
-            
-            if isDetailed {
-                Text("BRUKERMANUAL v1.0")
-                    .font(RetroTheme.font(size: 20, weight: .heavy))
-                    .foregroundColor(RetroTheme.primary)
-                    .padding(.bottom, 10)
-            }
 
             VStack(alignment: .leading, spacing: 15) {
                 guideStep(number: "01", title: "VELG PROSESS", description: "Velg sveisemetode øverst for å sette riktig k-faktor.")

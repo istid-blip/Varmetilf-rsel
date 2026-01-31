@@ -76,11 +76,12 @@ struct SettingsView: View {
                         .foregroundColor(RetroTheme.primary)
                     Spacer()
                     Button(action: { withAnimation(.easeInOut) { showSettings = false } }){
-                        Text("LUKK")
+                        Text("LUKK >")
                             .font(RetroTheme.font(size: 12, weight: .bold))
                             .foregroundColor(RetroTheme.primary)
                             .padding(.horizontal, 14).padding(.vertical, 8)
                             .overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1))
+
                     }
                 }.padding()
                 
@@ -90,11 +91,33 @@ struct SettingsView: View {
                         
                         // --- A: GENERELT ---
                         VStack(alignment: .leading, spacing: 16) {
-                            SectionHeader(title: "GENERELT")
-                            RetroToggle(title: "SPRÅK", isOn: isNorwegian)
-                            DividerLine()
-                            RetroToggle(title: "VIBRASJON", isOn: $enableHaptics)
                             
+                            // NY: Språkvelgeren
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("SPRÅK")
+                                    .font(RetroTheme.font(size: 14, weight: .bold))
+                                    .foregroundColor(RetroTheme.primary)
+                                
+                                RetroLanguageSwitcher(selectedLanguage: $selectedLanguage)
+                            }
+                            
+                            DividerLine()
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    SectionHeader(title:"VIBRASJON")
+                                    HStack(alignment: .top) {
+                                        Image(systemName: "info.circle")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                            .padding(.top, 2)
+                                        Text("Slå haptic feedback av eller på.") // Din forklarende tekst
+                                            .font(RetroTheme.font(size: 10))
+                                            .foregroundColor(RetroTheme.dim)
+                                    }
+                                }
+                                Spacer()
+                                RetroToggle(isOn: $enableHaptics)
+                            }
                             DividerLine()
                             
                             // --- B: SVEISEMETODER ---
@@ -112,7 +135,7 @@ struct SettingsView: View {
                                             .font(.system(size: 10))
                                             .foregroundColor(RetroTheme.dim)
                                             .padding(.top, 2)
-                                        Text("Velg hvilke sveiseprosesser og standarder som skal være tilgjengelige i kalkulatoren.")
+                                        Text("Velg hvilke sveisemetoder som skal være tilgjengelige i kalkulatoren.")
                                             .font(RetroTheme.font(size: 10))
                                             .foregroundColor(RetroTheme.dim)
                                             .fixedSize(horizontal: false, vertical: true)
@@ -168,7 +191,7 @@ struct SettingsView: View {
                                             .font(.system(size: 10))
                                             .foregroundColor(RetroTheme.dim)
                                             .padding(.top, 2)
-                                        Text(useDefaults ? "Smart-modus aktiv. Felter tilpasses automatisk valgt sveiseprosess." : "Manuell modus. Du bestemmer hvilke felter som vises uansett prosess.")
+                                        Text(useDefaults ? "Informasjon for strengen tilpasses automatisk valgt sveisemetode." : "Manuell modus. Du bestemmer hvilken informasjon som kan legges inn i strengdatamenyen.")
                                             .font(RetroTheme.font(size: 10))
                                             .foregroundColor(RetroTheme.dim)
                                             .fixedSize(horizontal: false, vertical: true)
@@ -176,8 +199,15 @@ struct SettingsView: View {
                                     .padding(.bottom, 4)
                                     
                                     // 2. Overstyrings-bryter
-                                    RetroToggle(title: "MANUELL OVERSTYRING", isOn: isManualOverride, isSubToggle: true)
-                                    
+                                    HStack(){
+                                        
+                                        Text("Manuell overstyring").font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary)
+                                        
+                                        Spacer()
+                                        
+                                        
+                                        RetroToggle(isOn: isManualOverride, isSubToggle: true)
+                                    }
                                     // 3. Rediger-knapp (Kun synlig ved manuell)
                                     if isManualOverride.wrappedValue {
                                         Button(action: {
@@ -217,8 +247,9 @@ struct SettingsView: View {
                         
                         // --- D: BRUKERVEILEDNING ---
                         VStack(alignment: .leading, spacing: 10) {
-                            SectionHeader(title: "BRUKERVEILEDNING")
-                            RetroGuideView(isDetailed: true)
+                            
+                            SectionHeader(title: "Brukermanual")
+                            Brukermanual(isDetailed: true)
                         }
                         
                         Spacer(minLength: 40)
@@ -252,7 +283,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle")
-                    Text("Du overstyrer nå de smarte standardvalgene. Kryss av feltene du ønsker skal være synlige.")
+                    Text("Du overstyrer nå standardvalgene for sveisemetoden som velges. Kryss av feltene du ønsker skal kunne redigeres i strengdatamenyen.")
                 }
                 .font(RetroTheme.font(size: 10))
                 .foregroundColor(RetroTheme.primary)
@@ -314,9 +345,9 @@ struct SettingsView: View {
     }
     
     private func SectionHeader(title: LocalizedStringKey) -> some View {
-        Text(title).font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim).padding(.bottom, 4)
+        Text(title).font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary)
     }
     private func DividerLine() -> some View {
-        Rectangle().fill(RetroTheme.dim.opacity(0.2)).frame(height: 1).padding(.vertical, 4)
+        Rectangle().fill(RetroTheme.dim.opacity(0.4)).frame(height: 1).padding(.vertical, 4)
     }
 }
