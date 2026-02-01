@@ -9,10 +9,20 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+// Enum for å vite hvilket felt vi redigerer
+enum TempField {
+    case preheat
+    case interpass
+}
+
 struct JobDetailView: View {
     @Bindable var job: WeldGroup
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) var modelContext
+    
+    // Tilstand for skuffen
+    @State private var showTempDrawer = false
+    @State private var activeTempField: TempField = .preheat
     
     // Hjelpefunksjon som lagrer filen til disk og returnerer URL-en
     func generateExportFile() -> URL {
@@ -28,7 +38,15 @@ struct JobDetailView: View {
     
     var body: some View {
         ZStack {
-            RetroTheme.background.ignoresSafeArea()
+            // BAKGRUNN (Med tap gesture for å lukke skuffen hvis man trykker i tomrommet)
+            RetroTheme.background
+                .ignoresSafeArea()
+                .onTapGesture {
+                    // Lukk både skuff og tastatur ved trykk i bakgrunnen
+                    if showTempDrawer { withAnimation { showTempDrawer = false } }
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            
             VStack(spacing: 0) {
                 // HEADER
                 HStack {
@@ -42,27 +60,183 @@ struct JobDetailView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        JobMetadataEditor(job: job)
+                        // Vi sender bindinger ned til editoren
+                        JobMetadataEditor(
+                            job: job,
+                            showTempDrawer: $showTempDrawer,
+                            activeTempField: $activeTempField
+                        )
                         JobPassesList(job: job)
-                    }.padding()
+                    }
+                    .padding()
+                    // Viktig: Gjør at tap i scrollview (utenfor knapper) også lukker skuffen/tastatur
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if showTempDrawer { withAnimation { showTempDrawer = false } }
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
+            .zIndex(1)
+            
+            // SKUFFEN (UnifiedInputDrawer - Gjenbruk fra HeatInputView)
+            if showTempDrawer {
+                VStack {
+                    Spacer()
+                    UnifiedInputDrawer(
+                        target: .interpass, // Vi bruker .interpass typen for begge da logikken er lik (temp)
+                        value: binding(for: activeTempField),
+                        range: 0...500, // Temperaturområde
+                        step: 1.0,
+                        isRecording: .constant(false), // Ikke relevant her
+                        onReset: {},
+                        onToggle: {},
+                        onSync: { _ in }
+                    )
+                    .padding(.bottom, 50)
+                }
+                .transition(.move(edge: .bottom))
+                .zIndex(300)
+            }
         }.crtScreen().navigationBarBackButtonHidden(true)
+    }
+    
+    // Hjelpefunksjon for å konvertere String-feltene i Job til Double for skuffen
+    func binding(for field: TempField) -> Binding<Double> {
+        switch field {
+        case .preheat:
+            return Binding(
+                get: { Double(job.preheatTemp) ?? 0 },
+                set: { job.preheatTemp = String(format: "%.0f", $0) }
+            )
+        case .interpass:
+            return Binding(
+                get: { Double(job.interpassTemp) ?? 0 },
+                set: { job.interpassTemp = String(format: "%.0f", $0) }
+            )
+        }
     }
 }
 
 // METADATA
 struct JobMetadataEditor: View {
     @Bindable var job: WeldGroup
+    @Binding var showTempDrawer: Bool
+    @Binding var activeTempField: TempField
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("JOB METADATA").font(RetroTheme.font(size: 12)).foregroundColor(RetroTheme.dim)
             VStack(spacing: 12) {
-                RetroTextField(title: "JOB NAME", text: $job.name)
-                RetroTextField(title: "WPQR / REF", text: $job.wpqrNumber)
-                HStack(spacing: 10) { RetroTextField(title: "PREHEAT (°C)", text: $job.preheatTemp); RetroTextField(title: "MAX INTERPASS (°C)", text: $job.interpassTemp) }
-                RetroTextField(title: "NOTES", text: $job.notes)
+                // Sender med onFocus closure for å lukke skuffen når tekstfelt aktiveres
+                RetroTextField(title: "JOB NAME", text: $job.name) {
+                    withAnimation { showTempDrawer = false }
+                }
+                
+                RetroTextField(title: "WPQR / REF", text: $job.wpqrNumber) {
+                    withAnimation { showTempDrawer = false }
+                }
+                
+                // TEMPERATUR KNAPPER
+                HStack(spacing: 10) {
+                    TempInputButton(
+                        title: "PREHEAT (°C)",
+                        value: job.preheatTemp,
+                        field: .preheat
+                    )
+                    
+                    TempInputButton(
+                        title: "MAX INTERPASS (°C)",
+                        value: job.interpassTemp,
+                        field: .interpass
+                    )
+                }
+                
+                RetroTextField(title: "NOTES", text: $job.notes) {
+                    withAnimation { showTempDrawer = false }
+                }
+                
             }.padding().overlay(Rectangle().stroke(RetroTheme.dim, lineWidth: 1))
+        }
+    }
+    
+    // KNAPPE-KOMPONENT
+    func TempInputButton(title: String, value: String, field: TempField) -> some View {
+        let isActive = showTempDrawer && activeTempField == field
+        
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(RetroTheme.font(size: 9))
+                .foregroundColor(isActive ? RetroTheme.primary : RetroTheme.primary)
+            
+            Button(action: {
+                // 1. Lukk tastatur hvis det er åpent
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                
+                // 2. Håndter skuffen
+                if isActive {
+                    withAnimation { showTempDrawer = false }
+                } else {
+                    activeTempField = field
+                    withAnimation { showTempDrawer = true }
+                }
+            }) {
+                HStack {
+                    Text(value.isEmpty ? "-" : value)
+                        .font(RetroTheme.font(size: 14))
+                        .foregroundColor(RetroTheme.primary)
+                    Spacer()
+                }
+                .padding(8)
+                .background(isActive ? RetroTheme.primary.opacity(0.1) : Color.black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 0)
+                        .stroke(isActive ? RetroTheme.primary : RetroTheme.dim, lineWidth: isActive ? 2 : 1)
+                )
+                .shadow(color: isActive ? RetroTheme.primary.opacity(0.6) : .clear, radius: isActive ? 6 : 0)
+            }
+        }
+    }
+}
+
+// TEXT FIELD (Oppdatert med glød og fokus-logikk)
+struct RetroTextField: View {
+    let title: String
+    @Binding var text: String
+    var onFocus: () -> Void = {} // Ny parameter for å håndtere fokus
+    
+    @State private var localText: String = ""
+    @FocusState private var isFocused: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(RetroTheme.font(size: 9))
+                .foregroundColor(RetroTheme.primary)
+            
+            TextField("", text: $localText)
+                .font(RetroTheme.font(size: 14))
+                .foregroundColor(RetroTheme.primary)
+                .padding(8)
+                // Litt lysere bakgrunn ved fokus for å matche knappene, ellers svart
+                .background(isFocused ? RetroTheme.primary.opacity(0.05) : Color.black)
+                .overlay(
+                    // Tykkere ramme (2) hvis fokus, ellers tynn (1)
+                    Rectangle()
+                        .stroke(isFocused ? RetroTheme.primary : RetroTheme.dim, lineWidth: isFocused ? 2 : 1)
+                )
+                // Glød effekt (Shadow)
+                .shadow(color: isFocused ? RetroTheme.primary.opacity(0.6) : .clear, radius: isFocused ? 6 : 0)
+                .focused($isFocused)
+                .onAppear { localText = text }
+                .onChange(of: isFocused) { _, newValue in
+                    if newValue {
+                        onFocus() // Kjør logikk når feltet får fokus (f.eks. lukk skuff)
+                    } else {
+                        text = localText
+                    }
+                }
+                .onSubmit { text = localText }
         }
     }
 }
@@ -153,18 +327,13 @@ struct DetailedPassRow: View {
     // OPPDATERT: Sjekker nå også om savedTravelSpeed har verdi
     func hasExtendedData(_ p: SavedCalculation) -> Bool {
         return (p.fillerDiameter ?? 0) > 0 ||
-               (p.wireFeedSpeed ?? 0) > 0 ||
-               (p.actualInterpass ?? 0) > 0 ||
-               (p.gasType != nil) ||
-               (p.gasFlow ?? 0) > 0 ||
-               (p.fillerMaterial != nil) ||
-               (p.savedTravelSpeed ?? 0) > 0
+        (p.wireFeedSpeed ?? 0) > 0 ||
+        (p.actualInterpass ?? 0) > 0 ||
+        (p.gasType != nil) ||
+        (p.gasFlow ?? 0) > 0 ||
+        (p.fillerMaterial != nil) ||
+        (p.savedTravelSpeed ?? 0) > 0
     }
-}
-// TEXT FIELD
-struct RetroTextField: View {
-    let title: String; @Binding var text: String; @State private var localText: String = ""; @FocusState private var isFocused: Bool
-    var body: some View { VStack(alignment: .leading, spacing: 4) { Text(title).font(RetroTheme.font(size: 9)).foregroundColor(RetroTheme.primary); TextField("", text: $localText).font(RetroTheme.font(size: 14)).foregroundColor(RetroTheme.primary).padding(8).background(Color.black).overlay(Rectangle().stroke(isFocused ? RetroTheme.primary : RetroTheme.dim, lineWidth: 1)).focused($isFocused).onAppear { localText = text }.onChange(of: isFocused) { _, newValue in if !newValue { text = localText } }.onSubmit { text = localText } } }
 }
 
 // EXPORT EXTENSION
@@ -183,7 +352,6 @@ extension WeldGroup {
         csv += "Max Interpass\(colSep)\"\(self.interpassTemp) °C\"\n"
         csv += "Notes\(colSep)\"\(self.notes)\"\n\n"
         
-        // OPPDATERT HEADER:
         let headers = [
             "Pass", "Type", "Process", "Transfer", "Filler Mat", "Gas Type", "Flow (l/min)", "Voltage (V)", "Amperage (A)", "Time (s)",
             "Length (mm)", "Energy (kJ/mm)", "k-Factor", "Travel Spd (mm/min)", "Interpass (°C)", "Diameter (mm)",
@@ -202,17 +370,17 @@ extension WeldGroup {
                 pass.name,
                 pass.passType ?? "-",
                 pass.processName,
-                pass.transferMode ?? "-",      // Ny
-                pass.fillerMaterial ?? "-",    // Ny
+                pass.transferMode ?? "-",
+                pass.fillerMaterial ?? "-",
                 pass.gasType ?? "-",
-                fmt(pass.gasFlow),             // Ny
+                fmt(pass.gasFlow),
                 fmt(pass.voltage),
                 fmt(pass.amperage),
                 fmt(pass.travelTime),
                 fmt(pass.weldLength),
                 heatVal,
                 kVal,
-                fmt(pass.savedTravelSpeed),    // Ny (lagret speed)
+                fmt(pass.savedTravelSpeed),
                 fmt(pass.actualInterpass),
                 fmt(pass.fillerDiameter),
                 pass.polarity ?? "",

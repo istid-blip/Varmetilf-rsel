@@ -610,3 +610,108 @@ extension View {
     }
 }
 
+struct RetroNumpadDrawer: View {
+    let title: String
+    @Binding var value: String // Verdien som skal redigeres
+    @Binding var isPresented: Bool // Styrer om skuffen vises
+    
+    // Intern state for det man taster inn før man trykker OK
+    @State private var tempString: String = ""
+    
+    // Grid-oppsett for tastene
+    let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
+    var body: some View {
+        RetroModalDrawer(isPresented: $isPresented, title: title) {
+            VStack(spacing: 20) {
+                
+                // --- Display (Viser tallet) ---
+                HStack {
+                    Text(tempString.isEmpty ? "0" : tempString)
+                        .font(.system(size: 40, weight: .bold, design: .monospaced))
+                        .foregroundColor(RetroTheme.primary)
+                    Text("°C")
+                        .font(.system(size: 40, weight: .bold, design: .monospaced))
+                        .foregroundColor(RetroTheme.primary.opacity(0.5))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RetroTheme.primary, lineWidth: 2)
+                )
+                
+                // --- Tastatur ---
+                LazyVGrid(columns: columns, spacing: 10) {
+                    // Tallene 1-9
+                    ForEach(1...9, id: \.self) { num in
+                        numpadButton(number: "\(num)")
+                    }
+                    
+                    // Slett-knapp
+                    Button(action: {
+                        if !tempString.isEmpty {
+                            tempString.removeLast()
+                        }
+                    }) {
+                        Image(systemName: "delete.left")
+                            .font(.title2)
+                            .frame(maxWidth: .infinity, minHeight: 60)
+                            .background(Color.black)
+                            .foregroundColor(RetroTheme.dim)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(RetroTheme.dim, lineWidth: 1)
+                            )
+                    }
+                    
+                    // Tallet 0
+                    numpadButton(number: "0")
+                    
+                    // OK / Bekreft-knapp
+                    Button(action: {
+                        value = tempString // Oppdater den eksterne verdien
+                        isPresented = false // Lukk skuffen
+                    }) {
+                        Image(systemName: "checkmark")
+                            .font(.title2)
+                            .frame(maxWidth: .infinity, minHeight: 60)
+                            .background(RetroTheme.primary)
+                            .foregroundColor(.black)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+            .padding()
+            .onAppear {
+                // Hent eksisterende verdi når skuffen åpnes
+                tempString = value
+            }
+        }
+    }
+    
+    // Hjelpefunksjon for å lage tall-knapper
+    func numpadButton(number: String) -> some View {
+        Button(action: {
+            // Begrensning på 4 siffer (f.eks. maks 9999 grader)
+            if tempString.count < 4 {
+                tempString += number
+            }
+        }) {
+            Text(number)
+                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .frame(maxWidth: .infinity, minHeight: 60)
+                .background(Color.black)
+                .foregroundColor(RetroTheme.primary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(RetroTheme.primary.opacity(0.5), lineWidth: 1)
+                )
+        }
+    }
+}
