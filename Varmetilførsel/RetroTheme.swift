@@ -23,7 +23,7 @@ struct RetroTheme {
 } //Struct som tar for seg basiclayout
 
 
-struct RetroDropdown<T: Identifiable & Equatable>: View {
+struct RetroDropdown<T: Hashable>: View {
     let title: String
     let selection: T
     let options: [T]
@@ -106,7 +106,7 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
 
             // SELVE MENY-LISTEN
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(options) { option in
+                ForEach(options, id: \.self) { option in
                     RetroDropdownRow(
                         option: option,
                         selection: selection,
@@ -134,7 +134,7 @@ struct RetroDropdown<T: Identifiable & Equatable>: View {
     }
 }
 
-struct RetroDropdownRow<T: Equatable>: View {
+struct RetroDropdownRow<T: Hashable>: View {
     let option: T
     let selection: T
     let itemText: (T) -> String
@@ -170,7 +170,7 @@ struct RetroDropdownRow<T: Equatable>: View {
     }
 } //Retrodropdown kan kanskje trimmes
 
-struct RetroDropdown2<T: Identifiable & Equatable>: View {
+struct RetroDropdown2<T: Hashable>: View {
     let title: String
     let selection: T
     let options: [T]
@@ -210,7 +210,7 @@ struct RetroDropdown2<T: Identifiable & Equatable>: View {
             GeometryReader { geo in
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(options) { option in
+                        ForEach(options, id: \.self) { option in
                             Button(action: {
                                 onSelect(option)
                                 withAnimation(.easeInOut(duration: 0.15)) {
@@ -609,6 +609,4 @@ extension View {
         self.shadow(color: RetroTheme.primary.opacity(0.8), radius: 8, x: 0, y: 0)
     }
 }
-extension String: Identifiable {
-    public var id: String { self }
-}//For retrodropdown2
+
