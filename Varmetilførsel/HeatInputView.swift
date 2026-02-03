@@ -110,7 +110,7 @@ struct HeatInputView: View {
     @AppStorage("heat_filler_mat") private var extFillerMaterial: String = ""
     
     @State private var extActualInterpass: Double = 0.0
-    @State private var extPassType: String = "Fill"
+    @State private var extPassType: String = "-"
     @State private var extGasFlow: Double = 0.0
     
     @State private var currentJobName: String = ""
@@ -187,6 +187,8 @@ struct HeatInputView: View {
                                 Button(action: { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)){ showSettings = true } }){
                                     Image(systemName: "gearshape.fill").font(.system(size: 20)).foregroundColor(RetroTheme.primary).padding(8)
                                 }
+                                .disabled(focusedField != nil)
+                                .opacity(focusedField != nil ? 0.5 : 1.0)
                                 Spacer()
                                 Text(extIsArcEnergy ? "ARC ENERGY" : "HEAT INPUT")
                                     .font(RetroTheme.font(size: 26, weight: .heavy))
@@ -206,10 +208,14 @@ struct HeatInputView: View {
                                             .opacity(focusedField != nil || isTimerRunning ? 0.5 : 1.0)
                                     }
                                     Spacer(minLength: 20)
-                                    VStack(alignment: .trailing, spacing: 1) {
+                                    VStack(alignment: .trailing, spacing: 0) {
                                         Text("CURRENT PASS (kJ/mm)").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                                         Text(String(format: "%.2f", heatInput)).font(RetroTheme.font(size: 36, weight: .black)).foregroundColor(RetroTheme.primary).shadow(color: RetroTheme.primary.opacity(0.5), radius: 5)
-                                        if activeJobID != nil { Text("• ACTIVE JOB").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.primary).blinkEffect() }
+                                        Text("TIMER •")
+                                                .font(RetroTheme.font(size: 10))
+                                                .foregroundColor(.red)
+                                                .blinkEffect()
+                                                .opacity(isTimerRunning ? 1.0 : 0.0)
                                     }.frame(minWidth: 160, alignment: .trailing)
                                 }.padding(.horizontal)
                             }
@@ -334,6 +340,15 @@ struct HeatInputView: View {
                         
                     }.frame(height: geometry.size.height)
                 }
+            
+                    .onAppear {
+                        // Hindrer skjermen i å slå seg av
+                        UIApplication.shared.isIdleTimerDisabled = true
+                    }
+                    .onDisappear {
+                        // Lar skjermen slå seg av igjen når brukeren forlater visningen
+                        UIApplication.shared.isIdleTimerDisabled = false
+                    }
                 .offset(x: showSettings ? 300 : 0).opacity(showSettings ? 0 : 1).zIndex(2)
                 
                 // SETTINGS VIEW
@@ -449,6 +464,7 @@ struct HeatInputView: View {
             resetStopwatch()
         }
     
+    
     // BINDINGS
     func binding(for field: InputTarget) -> Binding<Double> {
         switch field {
@@ -490,27 +506,33 @@ struct HeatInputView: View {
             Haptics.selection()
         }
     func restoreActiveJob() { if let id = activeJobID, let j = jobHistory.first(where: { $0.id == id }) { currentJobName = j.name; passCounter = j.passes.count + 1 } else { activeJobID = nil; passCounter = 1 } }
-    func startNewSession() { activeJobID = nil; passCounter = 1; currentJobName = ""; extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false; extActualInterpass = 0.0; extPassType = "Fill"; extGasFlow = 0.0; Haptics.play(.medium) }
+    func startNewSession() { activeJobID = nil; passCounter = 1; currentJobName = ""; extDiameter = 0.0; extPolarity = "DC+"; extWireFeed = 0.0; extIsArcEnergy = false; extActualInterpass = 0.0; extPassType = "-"; extGasFlow = 0.0; Haptics.play(.medium) }
     func finalizeAndSaveJob() {
-            // 1. Finn aktiv jobb og oppdater navnet
-            if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) {
-                // Hvis brukeren har skrevet et navn, bruk det.
-                if !tempJobName.isEmpty {
-                    existingJob.name = tempJobName
-                }
+        // 1. Finn aktiv jobb og oppdater navnet
+        if let id = activeJobID, let existingJob = jobHistory.first(where: { $0.id == id }) {
+            // Hvis brukeren har skrevet et navn, bruk det.
+            if !tempJobName.isEmpty {
+                existingJob.name = tempJobName
             }
-            
-            // 2. Lagre endringen til databasen
-            try? modelContext.save()
-            
-            // 3. Lukk dialogen og start ny sesjon
-            withAnimation {
-                isNamingJob = false
-            }
-            startNewSession()
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
+        
+        // 2. Lagre endringen til databasen
+        try? modelContext.save()
+        
+        // 3. Lukk dialogen og start ny sesjon
+        withAnimation {
+            isNamingJob = false
+        }
+        
+        startNewSession()
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        
+        
+        
+    }
 }
+
+
 
 // --- 3. UNIFIED DRAWER (Uendret) ---
 struct UnifiedInputDrawer: View {
@@ -624,8 +646,8 @@ struct ExtendedInputView: View {
     // VISIBILITY SET
     let visibleFields: Set<WeldField>
     
-    let passTypes = ["Root", "Fill", "Cap", "-"]
-    let transferModes = ["Short", "Spray", "Pulse", "Globular", "CMT", "-"]
+    let passTypes = ["Root", "-", "Cover"]
+    let transferModes = ["Short", "Spray", "Pulse", "-"]
     
     enum TextFieldId {
         case filler
@@ -715,7 +737,7 @@ struct ExtendedInputView: View {
                 if visibleFields.contains(.filler) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("FILLER METAL").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                        TextField("Ex: 316L", text: $fillerMaterial, onEditingChanged: { editing in
+                        TextField("", text: $fillerMaterial, onEditingChanged: { editing in
                             if editing { withAnimation { focusedField = nil } }
                         })
                         .focused($focusedText, equals: .filler)
@@ -759,7 +781,7 @@ struct ExtendedInputView: View {
                 if visibleFields.contains(.gas) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("GAS TYPE").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                        TextField("Ex: Mison 18", text: $gasType, onEditingChanged: { editing in
+                        TextField("", text: $gasType, onEditingChanged: { editing in
                             if editing { withAnimation { focusedField = nil } }
                         })
                         .focused($focusedText, equals: .gas)
@@ -801,7 +823,7 @@ struct ExtendedInputView: View {
 }
 // --- 6. NY GJENBRUKBAR SELECTABLE INPUT STRUCT ---
 struct SelectableInput: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: Double
     let isActive: Bool
     let isAnyFocused: Bool
@@ -838,6 +860,8 @@ struct SelectableInput: View {
                 Text(label)
                     .font(RetroTheme.font(size: 10, weight: isActive ? .bold : .regular))
                     .foregroundColor(activeColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .padding(4)
                     .frame(maxWidth: .infinity)
             }

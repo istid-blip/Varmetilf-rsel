@@ -7,6 +7,12 @@
     " • AWS: %@" : {
 
     },
+    " EXPORT" : {
+
+    },
+    " JOB EXPORTER" : {
+
+    },
     "(%@)" : {
 
     },
@@ -52,16 +58,6 @@
         }
       }
     },
-    "• ACTIVE JOB" : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "• AKTIV JOBB"
-          }
-        }
-      }
-    },
     "°C" : {
 
     },
@@ -71,12 +67,12 @@
     "×" : {
 
     },
-    "< BACK" : {
+    "<BACK" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "< TILBAKE"
+            "value" : "<TILBAKE"
           }
         }
       }
@@ -113,6 +109,9 @@
         }
       }
     },
+    "App Icon Preview" : {
+
+    },
     "ARC ENERGY" : {
       "localizations" : {
         "nb" : {
@@ -138,7 +137,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "User Manual"
+            "value" : "USER MANUAL"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BRUKERMANUAL"
           }
         }
       }
@@ -149,6 +154,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ANGRE"
+          }
+        }
+      }
+    },
+    "Current (A)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strøm (A)"
           }
         }
       }
@@ -164,6 +179,12 @@
       }
     },
     "DATA" : {
+
+    },
+    "Dette er en forhåndsvisning.\nDet faktiske ikonet eksporteres i 1024x1024." : {
+
+    },
+    "DIAMETER (mm)" : {
 
     },
     "Du overstyrer nå standardvalgene for sveisemetoden som velges. Kryss av feltene du ønsker skal kunne redigeres i strengdatamenyen." : {
@@ -182,36 +203,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CHANGE ACTIVE PROCESSES"
-          }
-        }
-      }
-    },
-    "Ex: 316L" : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eks: 316L"
-          }
-        }
-      }
-    },
-    "Ex: Mison 18" : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eks: Mison 18"
-          }
-        }
-      }
-    },
-    "EXPORT" : {
-      "localizations" : {
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EKSPORTER"
           }
         }
       }
@@ -236,6 +227,19 @@
         }
       }
     },
+    "FLOW (l/min)" : {
+
+    },
+    "For logging uten k-faktor aktiver BUEENERGI i menyen STRENG DATA." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For logging without k-factor, enable ARC ENERGY in the RUN DATA menu."
+          }
+        }
+      }
+    },
     "GAS TYPE" : {
       "localizations" : {
         "nb" : {
@@ -256,6 +260,9 @@
         }
       }
     },
+    "HeatInput Icon" : {
+
+    },
     "Informasjon for strengen tilpasses automatisk valgt sveisemetode." : {
       "localizations" : {
         "en" : {
@@ -265,6 +272,9 @@
           }
         }
       }
+    },
+    "INTERPASS (°C)" : {
+
     },
     "ISO 17671" : {
 
@@ -291,9 +301,6 @@
           }
         }
       }
-    },
-    "JOB_EDITOR_V1" : {
-
     },
     "k-factor" : {
       "localizations" : {
@@ -330,12 +337,42 @@
         }
       }
     },
+    "LEGG INN DATA" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ENTER DATA"
+          }
+        }
+      }
+    },
+    "Length (mm)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lengde (mm)"
+          }
+        }
+      }
+    },
     "LOG PASS" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "LOGGFØR STRENG"
+          }
+        }
+      }
+    },
+    "LOGG STRENG" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LOG PASS"
           }
         }
       }
@@ -350,19 +387,21 @@
         }
       }
     },
-    "LUKK" : {
-      "extractionState" : "stale",
+    "LUKK >" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CLOSE"
+            "value" : "BACK >"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "TILBAKE >"
           }
         }
       }
-    },
-    "LUKK >" : {
-
     },
     "Manuell modus. Du bestemmer hvilken informasjon som kan legges inn i strengdatamenyen." : {
       "localizations" : {
@@ -380,6 +419,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manual override"
+          }
+        }
+      }
+    },
+    "Mer informasjon og innstillinger finnes i konfigurasjonsmenyen øverst til venstre (tannhjulet)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More info and settings can be found in the configuration menu at the top left (gear icon)."
           }
         }
       }
@@ -429,7 +478,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PROSESS"
+            "value" : "METODE"
           }
         }
       }
@@ -441,8 +490,17 @@
             "state" : "translated",
             "value" : "PROCESS"
           }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "METODE"
+          }
         }
       }
+    },
+    "Q" : {
+
     },
     "RECORDING..." : {
       "localizations" : {
@@ -504,6 +562,9 @@
         }
       }
     },
+    "Send til Mac (AirDrop)" : {
+
+    },
     "Slå haptic feedback av eller på." : {
       "localizations" : {
         "en" : {
@@ -564,6 +625,19 @@
         }
       }
     },
+    "time (s)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tid (s)"
+          }
+        }
+      }
+    },
+    "TIMER •" : {
+
+    },
     "TIMER READY" : {
       "localizations" : {
         "nb" : {
@@ -584,12 +658,42 @@
         }
       }
     },
+    "Trykk 'LOGG STRENG' for å lagre strengen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap 'LOG RUN' to save the run."
+          }
+        }
+      }
+    },
+    "Trykk på feltene for å justere verdiene. Utvidet data legges inn i STRENG DATA." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap fields to adjust values. Enter extended data in RUN DATA."
+          }
+        }
+      }
+    },
     "TYPE" : {
       "localizations" : {
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "TYPE"
+          }
+        }
+      }
+    },
+    "UTVIDET INFORMASJON" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EXTENDED INFO"
           }
         }
       }
@@ -607,6 +711,16 @@
         }
       }
     },
+    "VELG METODE" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SELECT PROCESS"
+          }
+        }
+      }
+    },
     "VIBRASJON" : {
       "localizations" : {
         "en" : {
@@ -616,6 +730,19 @@
           }
         }
       }
+    },
+    "Voltage (V)" : {
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spenning (V)"
+          }
+        }
+      }
+    },
+    "WFS (m/min)" : {
+
     }
   },
   "version" : "1.0"

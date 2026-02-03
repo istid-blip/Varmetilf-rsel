@@ -50,12 +50,12 @@ struct JobDetailView: View {
             VStack(spacing: 0) {
                 // HEADER
                 HStack {
-                    Button(action: { dismiss() }) { HStack(spacing: 5) { Text("< BACK") }.font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                    Button(action: { dismiss() }) { HStack(spacing: 5) { Text("<BACK") }.font(RetroTheme.font(size: 14, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
                     Spacer()
-                    Text("JOB_EDITOR_V1").font(RetroTheme.font(size: 16, weight: .heavy)).foregroundColor(RetroTheme.primary)
+                    Text(" JOB EXPORTER").font(RetroTheme.font(size: 16, weight: .heavy)).foregroundColor(RetroTheme.primary)
                     Spacer()
                     let fileUrl = generateExportFile()
-                    ShareLink(item: fileUrl) { HStack(spacing: 5) { Text("EXPORT"); Image(systemName: "square.and.arrow.up") }.font(RetroTheme.font(size: 12, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
+                    ShareLink(item: fileUrl) { HStack(spacing: 5) { Text(" EXPORT"); Image(systemName: "square.and.arrow.up") }.font(RetroTheme.font(size: 12, weight: .bold)).foregroundColor(RetroTheme.primary).padding(8).overlay(Rectangle().stroke(RetroTheme.primary, lineWidth: 1)) }
                 }.padding()
                 
                 ScrollView {
@@ -251,15 +251,15 @@ struct JobPassesList: View {
                 if !job.passes.isEmpty { let avg = job.passes.compactMap { $0.heatInput }.reduce(0, +) / Double(job.passes.count); Text("AVG: \(String(format: "%.2f", avg)) kJ/mm").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.primary) }
             }
             if job.passes.isEmpty { Text("NO PASSES RECORDED").font(RetroTheme.font(size: 14)).foregroundColor(RetroTheme.dim).padding().frame(maxWidth: .infinity).overlay(Rectangle().stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1)) }
-            else { let sorted = job.passes.sorted(by: { $0.timestamp < $1.timestamp }); ForEach(sorted) { pass in DetailedPassRow(pass: pass, onDelete: { deletePass(pass) }) } }
+            else { let sorted = job.passes.sorted(by: { $0.timestamp < $1.timestamp }); ForEach(sorted) { pass in
+                DetailedPassRow(pass: pass)  } }
         }
     }
-    func deletePass(_ pass: SavedCalculation) { withAnimation { if let index = job.passes.firstIndex(of: pass) { job.passes.remove(at: index) }; modelContext.delete(pass) } }
 }
 
 // RAD (Utvidet)
 struct DetailedPassRow: View {
-    let pass: SavedCalculation; var onDelete: () -> Void
+    let pass: SavedCalculation
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header
@@ -270,7 +270,6 @@ struct DetailedPassRow: View {
                 }
                 Spacer()
                 Text(pass.timestamp.formatted(date: .omitted, time: .shortened)).font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
-                Button(action: onDelete) { Image(systemName: "trash").font(.system(size: 12)).foregroundColor(.red.opacity(0.7)).padding(6).background(Color.red.opacity(0.1)).clipShape(Circle()) }
             }
             Divider().background(RetroTheme.dim.opacity(0.3))
             

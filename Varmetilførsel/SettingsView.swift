@@ -256,6 +256,15 @@ struct SettingsView: View {
                         
                         // --- FOOTER ---
                         VStack(spacing: 6) {
+
+                            HStack {
+                                HeatInputLogoQ(size: 60) // En liten versjon, f.eks. 60x60 punkter
+                                Text("HEAT INPUT")
+                                    .font(RetroTheme.font(size: 24))
+                                    .foregroundColor(RetroTheme.primary)
+                            }
+                            
+                            
                             Text("Varmetilførsel v1.0").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                             Text("© \(String(Calendar.current.component(.year, from: Date()))) Frode Halrynjo")
                         }.font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim).frame(maxWidth: .infinity)
