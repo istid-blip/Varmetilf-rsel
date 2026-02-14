@@ -242,7 +242,7 @@
         }
       }
     },
-    "Du har overstyr standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG." : {
+    "Du har overstyrt standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {

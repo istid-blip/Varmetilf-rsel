@@ -782,7 +782,7 @@ struct ExtendedInputView: View {
                                     .font(.system(size: 10))
                                     .padding(.top, 2)
                                 
-                                Text("Du har overstyr standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG.")
+                                Text("Du har overstyrt standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG.")
                                     .font(RetroTheme.font(size: 10))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
