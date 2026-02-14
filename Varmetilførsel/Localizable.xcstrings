@@ -119,6 +119,9 @@
     "▼" : {
 
     },
+    "0.0" : {
+
+    },
     "3" : {
 
     },
@@ -200,6 +203,9 @@
         }
       }
     },
+    "CLOSE" : {
+
+    },
     "Current (A)" : {
       "localizations" : {
         "nb" : {
@@ -242,7 +248,7 @@
         }
       }
     },
-    "Du har overstyr standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG." : {
+    "Du har overstyrt standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -339,6 +345,9 @@
       }
     },
     "INTERPASS (°C)" : {
+
+    },
+    "ISO 15609-1 DATA" : {
 
     },
     "ISO 17671" : {
@@ -746,6 +755,9 @@
           }
         }
       }
+    },
+    "Type details here..." : {
+
     },
     "UTVIDET INFORMASJON" : {
       "localizations" : {
