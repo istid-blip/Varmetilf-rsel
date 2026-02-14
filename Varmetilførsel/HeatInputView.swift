@@ -596,8 +596,7 @@ struct UnifiedInputDrawer: View {
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
-                                    .background(Color.black.opacity(0.3))
-                                    .clipShape(Capsule())
+                                    
                                     
                                 } else {
                                     // Start-visning
