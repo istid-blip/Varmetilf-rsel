@@ -71,7 +71,7 @@ struct SettingsView: View {
                 
                 // 2. HEADER
                 HStack {
-                    Text("KONFIGURASJON")
+                    Text("KONFIG")
                         .font(RetroTheme.font(size: 18, weight: .heavy))
                         .foregroundColor(RetroTheme.primary)
                     Spacer()
@@ -265,7 +265,7 @@ struct SettingsView: View {
                             }
                             
                             
-                            Text("Varmetilførsel v1.0").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
+                            Text("Varmetilførsel v1.1").font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim)
                             Text("© \(String(Calendar.current.component(.year, from: Date()))) Frode Halrynjo")
                         }.font(RetroTheme.font(size: 10)).foregroundColor(RetroTheme.dim).frame(maxWidth: .infinity)
                     }.padding(24)

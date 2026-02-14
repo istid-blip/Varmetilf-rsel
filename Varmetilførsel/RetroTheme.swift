@@ -430,7 +430,7 @@ extension View {
 }
 struct RetroModalDrawer<Content: View>: View {
     @Binding var isPresented: Bool
-    let title: String
+    let title: LocalizedStringKey
     var fromTop: Bool = false
     var showHeader: Bool = true       // NY: Kan skjule header
     var fixedHeight: CGFloat? = nil   // NY: Kan sette fast høyde
@@ -611,7 +611,7 @@ extension View {
 }
 
 struct RetroNumpadDrawer: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var value: String // Verdien som skal redigeres
     @Binding var isPresented: Bool // Styrer om skuffen vises
     

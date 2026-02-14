@@ -564,13 +564,85 @@ struct UnifiedInputDrawer: View {
                     Text(isRecording ? "RECORDING..." : "TIMER READY").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(isRecording ? .red : RetroTheme.dim).padding(.top, 10)
                     Button(action: onToggle) {
                         ZStack {
-                            Circle().fill(Color.red.opacity(isRecording ? 0.2 : 0.0)).frame(width: 150, height: 150).scaleEffect(pulseAmount + 0.1).blur(radius: 15)
-                            Circle().fill(LinearGradient(colors: [isRecording ? .red : Color(white: 0.15), .black], startPoint: .topLeading, endPoint: .bottomTrailing)).frame(width: 130, height: 130).overlay(Circle().stroke(isRecording ? Color.red : RetroTheme.dim, lineWidth: 4))
-                            VStack(spacing: 2) { if isRecording { Text(String(format: "%02d", Int(min(value, 999)))).font(.system(size: 50, weight: .black, design: .monospaced)).foregroundColor(.white).contentTransition(.numericText(value: value)); Text("SEC").font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(.white.opacity(0.8)) } else { Image(systemName: "play.fill").font(.title).foregroundColor(RetroTheme.primary); Text("START").font(RetroTheme.font(size: 14, weight: .black)).foregroundColor(RetroTheme.primary) } }
-                        }.scaleEffect(isRecording ? pulseAmount : 1.0)
-                    }.buttonStyle(PlainButtonStyle())
-                    Button(action: onReset) { HStack { Image(systemName: "arrow.counterclockwise"); Text("RESET") }.font(RetroTheme.font(size: 10, weight: .bold)).foregroundColor(RetroTheme.dim).padding(.vertical, 8).padding(.horizontal, 16).overlay(RoundedRectangle(cornerRadius: 6).stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1)) }.opacity(value > 0 && !isRecording ? 1.0 : 0.2).disabled(isRecording || value == 0)
-                }.transition(.opacity).onChange(of: isRecording) { _, newValue in if newValue { withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { pulseAmount = 1.06 } } else { withAnimation(.spring()) { pulseAmount = 1.0 } } }
+                            // Pulserende bakgrunn
+                            Circle()
+                                .fill(Color.red.opacity(isRecording ? 0.2 : 0.0))
+                                .frame(width: 150, height: 150)
+                                .scaleEffect(pulseAmount + 0.1)
+                                .blur(radius: 15)
+                            
+                            // Selve hovedknappen
+                            Circle()
+                                .fill(LinearGradient(colors: [isRecording ? .red : Color(white: 0.15), .black], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 130, height: 130)
+                                .overlay(Circle().stroke(isRecording ? Color.red : RetroTheme.dim, lineWidth: 4))
+                            
+                            // Innholdet (Tall / Start / Stop)
+                            VStack(spacing: 2) {
+                                if isRecording {
+                                    // Telleren
+                                    Text(String(format: "%02d", Int(min(value, 999))))
+                                        .font(.system(size: 50, weight: .black, design: .monospaced))
+                                        .foregroundColor(.white)
+                                        .contentTransition(.numericText(value: value))
+                                    
+                                    // NY: Tydelig STOPP-indikator
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "square.fill")
+                                            .font(.caption2)
+                                        Text("STOP")
+                                    }
+                                    .font(RetroTheme.font(size: 12, weight: .heavy))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(Color.black.opacity(0.3))
+                                    .clipShape(Capsule())
+                                    
+                                } else {
+                                    // Start-visning
+                                    Image(systemName: "play.fill")
+                                        .font(.title)
+                                        .foregroundColor(RetroTheme.primary)
+                                    Text("START")
+                                        .font(RetroTheme.font(size: 14, weight: .black))
+                                        .foregroundColor(RetroTheme.primary)
+                                }
+                            }
+                        }
+                        .scaleEffect(isRecording ? pulseAmount : 1.0)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Reset-knappen (uendret)
+                    Button(action: onReset) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("RESET")
+                        }
+                        .font(RetroTheme.font(size: 10, weight: .bold))
+                        .foregroundColor(RetroTheme.dim)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(RetroTheme.dim.opacity(0.5), lineWidth: 1))
+                    }
+                    .opacity(value > 0 && !isRecording ? 1.0 : 0.2)
+                    .disabled(isRecording || value == 0)
+                    
+                    // Animasjonslogikk (uendret, men må ligge i konteksten der du limer inn)
+                    .transition(.opacity)
+                    .onChange(of: isRecording) { _, newValue in
+                        if newValue {
+                            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                pulseAmount = 1.06
+                            }
+                        } else {
+                            withAnimation(.spring()) {
+                                pulseAmount = 1.0
+                            }
+                        }
+                    }
+                }
             } else {
                 GeometryReader { geo in let midY = geo.size.height / 2; ZStack { ForEach(-visibleTicks...visibleTicks, id: \.self) { i in let index = round(value / step) + Double(i); let yPos = midY + (CGFloat(index) - CGFloat(value / step)) * 20; HStack { Rectangle().fill(RetroTheme.primary).frame(width: Int(index) % 5 == 0 ? 80 : 40, height: 2) }.position(x: geo.size.width / 2, y: yPos).opacity(calculateOpacity(yPos: yPos, height: geo.size.height)) } } }.clipShape(RoundedRectangle(cornerRadius: 12)).contentShape(Rectangle()).gesture(DragGesture().onChanged { g in
                     let delta = g.translation.height - lastDragValue
@@ -651,9 +723,9 @@ struct ExtendedInputView: View {
     @Binding var fillerMaterial: String
     let calculatedTravelSpeed: Double // (Brukes ikke visuelt lenger, men må være her for init)
     @Binding var focusedField: HeatInputView.InputTarget?
-    
-    // VISIBILITY SET
     let visibleFields: Set<WeldField>
+    
+    @AppStorage("use_process_field_defaults") private var useProcessDefaults: Bool = true
     
     let passTypes = ["Root", "-", "Cover"]
     let transferModes = ["Short", "Spray", "Pulse", "-"]
@@ -704,6 +776,23 @@ struct ExtendedInputView: View {
                 .buttonStyle(.plain)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            
+            if !useProcessDefaults {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 10))
+                                    .padding(.top, 2)
+                                
+                                Text("Du har overstyr standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG.")
+                                    .font(RetroTheme.font(size: 10))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .foregroundColor(RetroTheme.primary)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RetroTheme.primary.opacity(0.1))
+                            .overlay(Rectangle().stroke(RetroTheme.primary.opacity(0.3), lineWidth: 1))
+                        }
             
             Divider().background(RetroTheme.dim)
             

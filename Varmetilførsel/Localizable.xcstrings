@@ -8,10 +8,24 @@
 
     },
     " EXPORT" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EKSPORTER"
+          }
+        }
+      }
     },
     " JOB EXPORTER" : {
-
+      "localizations" : {
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JOBB EKSPORTERER"
+          }
+        }
+      }
     },
     "(%@)" : {
 
@@ -35,6 +49,12 @@
             "state" : "translated",
             "value" : "%lld active"
           }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld aktiv"
+          }
         }
       }
     },
@@ -54,6 +74,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld selected"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld valgt"
           }
         }
       }
@@ -105,6 +131,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AKTIV JOBB"
+          }
+        }
+      }
+    },
+    "AKTIVE PROSESSER" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ACTIVE PROCESSES"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AKTIVE METODER"
           }
         }
       }
@@ -181,11 +223,34 @@
     "DATA" : {
 
     },
+    "DATA +" : {
+
+    },
     "Dette er en forhåndsvisning.\nDet faktiske ikonet eksporteres i 1024x1024." : {
 
     },
     "DIAMETER (mm)" : {
 
+    },
+    "DINE DATA-FELTER" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "YOUR DATA INPUTFIELDS"
+          }
+        }
+      }
+    },
+    "Du har overstyr standardvalgene. Feltene som vises er basert på dine manuelle valg lagt inn i KONFIG." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have overridden the default settings. The fields displayed are based on your manual selections entered in CONFIG."
+          }
+        }
+      }
     },
     "Du overstyrer nå standardvalgene for sveisemetoden som velges. Kryss av feltene du ønsker skal kunne redigeres i strengdatamenyen." : {
       "localizations" : {
@@ -321,18 +386,12 @@
     "kJ/mm (AE)" : {
 
     },
-    "KONFIGURASJON" : {
+    "KONFIG" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CONFIGURATION"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "KONFIGURASJON"
+            "value" : "CONFIG"
           }
         }
       }
@@ -362,7 +421,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "LOGGFØR STRENG"
+            "value" : "LOGG STRENG"
           }
         }
       }
@@ -552,18 +611,15 @@
         }
       }
     },
-    "SEC" : {
+    "Send til Mac (AirDrop)" : {
       "localizations" : {
-        "nb" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SEK"
+            "value" : "Send to Mac (Airdrop)"
           }
         }
       }
-    },
-    "Send til Mac (AirDrop)" : {
-
     },
     "Slå haptic feedback av eller på." : {
       "localizations" : {
@@ -604,6 +660,9 @@
           }
         }
       }
+    },
+    "STOP" : {
+
     },
     "STRENG DATA" : {
       "localizations" : {
@@ -698,7 +757,7 @@
         }
       }
     },
-    "Varmetilførsel v1.0" : {
+    "Varmetilførsel v1.1" : {
 
     },
     "Velg hvilke sveisemetoder som skal være tilgjengelige i kalkulatoren." : {
